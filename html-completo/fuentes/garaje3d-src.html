@@ -1,0 +1,1150 @@
+<title>Garaje 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Extra+Condensed:ital,wght@0,600;0,800;1,800&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: el garaje 3D llena la pantalla; los paneles flotan encima en vidrio oscuro translúcido (barra arriba, categorías a la izquierda, opciones a la derecha, build abajo). En celular el 3D va arriba y los paneles bajan en columna. Un solo look oscuro, a propósito. */
+:root{
+  --ground:#0B0C0F;
+  --glass:rgba(12,14,17,.56);
+  --glass-strong:rgba(12,14,17,.74);
+  --edge:rgba(255,255,255,.10);
+  --raise:rgba(255,255,255,.06);
+  --fg:#F3F1EC;
+  --muted:#B4B9C2;
+  --accent:#FF5B1F;
+  --on-accent:#170A04;
+  --f-display:'Saira Extra Condensed','Arial Narrow',sans-serif;
+  --f-body:'Barlow',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--ground);color:var(--fg);font:400 15px/1.45 var(--f-body);overflow:hidden}
+*{box-sizing:border-box}
+button,label.btn{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.glass{background:var(--glass);border:1px solid var(--edge);backdrop-filter:blur(16px) saturate(1.15);-webkit-backdrop-filter:blur(16px) saturate(1.15)}
+
+.app{position:relative;width:100%;height:100%}
+#stage{position:absolute;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.err{position:absolute;inset:0;display:grid;place-items:center;padding:24px;text-align:center;color:var(--muted)}
+
+.top{position:absolute;left:16px;right:16px;top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 22px;padding:10px 16px}
+.logo{display:flex;align-items:baseline;gap:8px;font:800 italic 30px/1 var(--f-display);letter-spacing:.02em}
+.logo i{width:10px;height:10px;background:var(--accent);transform:skewX(-18deg);display:inline-block}
+.moto{display:flex;flex-direction:column;line-height:1.15}
+.moto small{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.moto b{font-size:15px}
+.top .sp{flex:1}
+.seg{display:flex;padding:3px;background:var(--raise);border:1px solid var(--edge)}
+.seg button{min-height:36px;padding:0 12px;font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:#0B0C0F}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;font-weight:600;font-size:13px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--edge);background:var(--raise)}
+.btn:hover{border-color:rgba(255,255,255,.28)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:800;clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);padding:0 24px}
+#glb{position:absolute;width:1px;height:1px;opacity:0}
+
+.rail{position:absolute;left:16px;top:96px;bottom:112px;width:232px;padding:16px 0;display:flex;flex-direction:column;gap:2px;overflow-y:auto}
+.rail h2{margin:0;padding:0 18px 10px;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.cat{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:56px;padding:8px 18px;text-align:left;box-shadow:inset 3px 0 0 transparent}
+.cat .n{display:block;font-weight:700;font-size:16px}
+.cat .s{display:block;font-size:12px;color:var(--muted)}
+.cat .m{width:8px;height:8px;flex:none;transform:skewX(-18deg);border:1px solid #5A606C}
+.cat.on{background:rgba(255,255,255,.08);box-shadow:inset 3px 0 0 var(--accent)}
+.cat.mod .m{background:var(--accent);border-color:var(--accent)}
+.cat:disabled{opacity:.4;cursor:not-allowed}
+
+.panel{position:absolute;right:16px;top:96px;bottom:112px;width:372px;display:flex;flex-direction:column}
+.ph{padding:20px 22px 14px;border-bottom:1px solid var(--edge);display:flex;flex-direction:column;gap:5px}
+.kick{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#FF8A5C}
+.ph h3{margin:0;font:800 36px/1 var(--f-display);text-transform:uppercase;letter-spacing:.01em;overflow-wrap:anywhere}
+.ph p{margin:2px 0 0;font-size:14px;color:var(--muted)}
+.opts{flex:1;overflow-y:auto;padding:14px 22px;display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;flex-direction:column;gap:7px;padding:14px 16px;text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--edge)}
+.opt:hover{border-color:rgba(255,255,255,.26)}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:rgba(255,91,31,.10)}
+.opt .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.opt .on{font-weight:700;font-size:17px}
+.opt .pr{font:500 13px var(--f-mono);white-space:nowrap}
+.opt .od{font-size:13px;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border:1px solid rgba(255,255,255,.18);color:#D9DCE1}
+.sw{display:inline-block;width:18px;height:18px;border-radius:50%;border:1px solid rgba(255,255,255,.3);vertical-align:-4px;margin-right:8px}
+.pf{padding:14px 22px 18px;border-top:1px solid var(--edge);display:flex;flex-direction:column;gap:6px}
+.pf small{font-size:12px;color:var(--muted)}
+
+.views{position:absolute;left:50%;bottom:112px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:4px;max-width:calc(100% - 680px);overflow-x:auto}
+.views button{min-height:40px;padding:0 13px;font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.views button[aria-pressed="true"]{color:#fff;background:rgba(255,91,31,.22)}
+
+.bottom{position:absolute;left:16px;right:16px;bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 20px;padding:12px 16px}
+.bottom .lab{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.bc b{display:block;font-size:16px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;flex:1 1 300px;min-width:0}
+.chip{font-size:12px;font-weight:600;padding:6px 10px;background:var(--raise);border:1px solid var(--edge)}
+.total{display:flex;flex-direction:column;align-items:flex-end}
+.total b{font:500 18px var(--f-mono)}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.toast{position:absolute;left:50%;top:96px;transform:translateX(-50%);padding:10px 16px;font-weight:600;font-size:14px;pointer-events:none;transition:opacity .25s}
+.toast[hidden]{display:block!important;opacity:0}
+
+
+.moto{display:flex;flex-direction:column;line-height:1.15;text-align:left;padding:4px 10px;border:1px solid transparent;min-height:44px;justify-content:center}
+.moto:hover{border-color:var(--edge)}
+.moto .chg{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#FF8A5C;margin-top:2px}
+.vh{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.lab2{display:block;font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:6px 0 -2px}
+.inp{width:100%;min-height:44px;padding:0 12px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.18);color:var(--fg);font:inherit;font-size:15px}
+.chiprow{display:flex;flex-wrap:wrap;gap:6px}
+.chiprow.scroll{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.chiprow.scroll .pill{flex:none}
+.pill{min-height:36px;padding:0 12px;font-size:13px;font-weight:600;border:1px solid var(--edge);background:var(--raise);color:#DADDE2}
+.pill.sm{min-height:32px;font-size:12px}
+.pill[aria-pressed="true"]{background:var(--fg);color:#0B0C0F;border-color:var(--fg)}
+.mlist{display:flex;flex-direction:column;gap:6px}
+.mrow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:10px 12px;text-align:left;border:1px solid var(--edge);background:rgba(255,255,255,.04);min-height:56px}
+.mrow:hover{border-color:rgba(255,255,255,.26)}
+.mrow[aria-pressed="true"]{border-color:var(--accent);background:rgba(255,91,31,.10)}
+.mt{display:flex;flex-direction:column;min-width:0}.mb{font-size:12px;color:var(--muted)}.mm{font-weight:700;font-size:16px}
+.mi{display:flex;flex-direction:column;align-items:flex-end;gap:4px;font-size:12px;color:var(--muted);white-space:nowrap}
+.bd{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border:1px solid rgba(255,255,255,.2);color:#C9CDD4}
+.bd.ok{background:#2fb67a;border-color:#2fb67a;color:#06140d}.bd.test{border-color:#F2C230;color:#F2C230}
+.topn{grid-column:1/-1;font-size:11px;font-weight:600;color:#FF8A5C}
+.note{margin:4px 0 0;font-size:12.5px;line-height:1.45;color:var(--muted)}
+.zlist{display:flex;flex-direction:column;gap:4px}
+.zrow{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:44px;padding:6px 10px;text-align:left;border:1px solid var(--edge);background:rgba(255,255,255,.04);font-weight:600;font-size:14px}
+.zrow[aria-pressed="true"]{border-color:var(--accent);background:rgba(255,91,31,.10)}
+.zrow .dot{width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,.35)}
+.zrow .zf{font-size:12px;font-weight:500;color:var(--muted)}
+.swgrid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.swb{aspect-ratio:1;min-height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.14)}
+.swb[aria-pressed="true"]{border-color:#fff;box-shadow:0 0 0 3px var(--accent)}
+.pick{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid var(--edge);background:rgba(255,255,255,.04)}
+.pick input[type=color]{width:44px;height:36px;border:0;padding:0;background:none;cursor:pointer}
+.pick label{font-weight:600;font-size:14px;cursor:pointer}.pick .hex{margin-left:auto;font:500 13px var(--f-mono);color:var(--muted)}
+.seg2{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.seg2 button{min-height:40px;font-size:12px;font-weight:600;border:1px solid var(--edge);background:var(--raise);color:#DADDE2}
+.seg2 button[aria-pressed="true"]{background:var(--fg);color:#0B0C0F}
+.btn.ghost{background:transparent}.btn.wide{width:100%}
+.row2{display:flex;flex-wrap:wrap;gap:8px}.row2 .btn{flex:1 1 120px}
+.dgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.dsg{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border:1px solid var(--edge);background:rgba(0,0,0,.35);font-size:11.5px;font-weight:600;text-align:center;cursor:pointer;min-height:44px}
+.dsg img{width:100%;aspect-ratio:1;object-fit:contain;max-width:64px}
+.dsg[aria-pressed="true"]{border-color:var(--accent);background:rgba(255,91,31,.14)}
+.dsg.up .plus{display:grid;place-items:center;width:100%;max-width:64px;aspect-ratio:1;border:1px dashed rgba(255,255,255,.35);font-size:28px;color:#FF8A5C}
+input[type=range]{width:100%;accent-color:var(--accent);min-height:28px}
+.empty{display:flex;flex-direction:column;gap:10px;padding:16px;border:1px dashed rgba(255,255,255,.22);font-size:14px;color:var(--muted)}
+.empty b{color:var(--fg);font-size:16px}
+.olist{display:flex;flex-direction:column;gap:8px}
+#opts{gap:10px}
+#opts > *{flex-shrink:0}
+#stage.placing canvas{cursor:crosshair}
+.nomodel[hidden]{display:none!important}
+.nomodel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 32px));padding:20px 22px;display:flex;flex-direction:column;gap:10px;text-align:left;background:var(--glass-strong)}
+.nomodel b{font:800 34px/1 var(--f-display);text-transform:uppercase}
+.nomodel span{font-size:14px;color:var(--muted)}
+
+
+.engine{position:absolute;left:50%;bottom:166px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:4px;max-width:calc(100% - 680px)}
+.engine button{min-height:40px;padding:0 13px;font-weight:600;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.engine button:disabled{opacity:.4;cursor:not-allowed}
+#eng-on[aria-pressed="true"]{color:#06140d;background:#3FD08A}
+#eng-gas[aria-pressed="true"]{color:#170A04;background:var(--accent)}
+.tach{display:flex;align-items:center;gap:8px;padding:0 10px;font:500 12px var(--f-mono);white-space:nowrap}
+.tach[hidden]{display:none!important}
+.tbar{width:90px;height:8px;background:rgba(255,255,255,.12);position:relative;overflow:hidden}
+#rpmbar{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#3FD08A 0 55%,#F2C230 55% 80%,#E8344E 80%)}
+.views{max-width:calc(100% - 680px)}
+.modal{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(5,6,8,.55)}
+.modal[hidden]{display:none!important}
+.mbox{width:min(980px,100%);max-height:calc(100% - 32px);overflow:auto;background:var(--glass-strong);padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.mh{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}.mh h3{margin:0;font:800 34px/1 var(--f-display);text-transform:uppercase}.mh .btn{margin-left:auto}
+.mgrid{display:flex;flex-wrap:wrap;gap:20px}
+#photo{flex:1 1 300px;min-width:0;max-width:420px;width:100%;height:auto;aspect-ratio:1080/1350;border:1px solid var(--edge);background:#0b0c0f}
+.mside{flex:1 1 280px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.revtop{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border:1px solid}
+.revtop b{font:800 28px/1 var(--f-display);text-transform:uppercase}.revtop span{font-size:13.5px;color:var(--muted)}
+.revtop.ok{border-color:#3FD08A;background:rgba(63,208,138,.10)}.revtop.ok b{color:#3FD08A}
+.revtop.warn{border-color:#F2C230;background:rgba(242,194,48,.10)}.revtop.warn b{color:#F2C230}
+.rv{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:12px;align-items:start;padding:12px 14px;border:1px solid var(--edge);background:rgba(255,255,255,.04)}
+.rv b{display:block;font-size:15px}.rv span span{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.rvd{width:12px;height:12px;border-radius:50%;margin-top:4px}.rv.ok .rvd{background:#3FD08A}.rv.warn .rvd{background:#F2C230}
+.rvs{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.rv.ok .rvs{color:#3FD08A}.rv.warn .rvs{color:#F2C230}
+.bcard{position:relative;display:flex;flex-direction:column;gap:8px;padding:14px 16px;border:1px solid var(--edge);background:rgba(255,255,255,.04)}
+.bcard .row{display:flex;justify-content:space-between;align-items:center;gap:10px}.bcard .on{font-weight:800;font-size:18px}
+.bcard .dots{display:flex;gap:4px}.bcard .dot{width:16px;height:16px;border-radius:50%;border:1px solid rgba(255,255,255,.3)}
+.bcard .od{font-size:13px;color:var(--muted)}
+.bcard [data-like][aria-pressed="true"]{border-color:var(--accent);color:#FF8A5C}
+.crown{align-self:flex-start;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 8px;background:#F2C230;color:#1b1503}
+
+@media (max-width:1100px){
+  .views{max-width:calc(100% - 32px);bottom:auto;top:calc(100svh - 64px - 300px)}
+  .engine{max-width:calc(100% - 32px);bottom:auto;top:calc(100svh - 64px - 352px)}
+}
+@media (max-width:900px){
+  body{overflow:auto}
+  .app{height:auto;display:flex;flex-direction:column;gap:12px;padding-bottom:16px}
+  #stage{position:relative;height:62svh;min-height:380px;inset:auto}
+  .top{position:relative;left:auto;right:auto;top:auto;margin:0 16px;order:-1;margin-top:16px}
+  .rail,.panel,.bottom,.views,.engine{position:relative;left:auto;right:auto;top:auto;bottom:auto;width:auto;margin:0 16px;transform:none;max-width:none}
+  .rail{flex-direction:row;overflow-x:auto;padding:8px;gap:4px}
+  .rail h2{display:none}
+  .cat{flex:none;min-height:52px;box-shadow:inset 0 -3px 0 transparent}
+  .cat.on{box-shadow:inset 0 -3px 0 var(--accent)}
+  .views,.engine{order:2;justify-content:center;flex-wrap:wrap}
+  .panel{min-height:420px;max-height:82svh}
+  .glass{background:var(--glass-strong)}
+  .toast{position:fixed;top:16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <div id="stage" aria-label="Garaje 3D con tu moto. Arrastra para girar la cámara.">
+    <div class="nomodel glass" id="nomodel" hidden>
+      <span class="kick">Falta el modelo 3D</span>
+      <b id="nm-name"></b>
+      <span>Esta moto todavía no está en 3D. Escanéala con el celular y sube el archivo, o mira cómo funciona con la Gixxer 150 de prueba.</span>
+      <span class="row2"><label for="glb" class="btn primary">Cargar escaneo (.glb)</label><button class="btn" id="nm-test">Ver la de prueba</button></span>
+    </div>
+  </div>
+
+  <header class="top glass">
+    <div class="logo">GARAJE<i></i></div>
+    <button class="moto" id="moto-btn" aria-label="Cambiar de moto"><small id="moto-k">Suzuki</small><b id="moto-n">Gixxer 150</b><span class="chg">Cambiar</span></button>
+    <span class="sp"></span>
+    <div class="seg" role="group" aria-label="Calidad de imagen">
+      <button id="q-alta" aria-pressed="true">Realista</button>
+      <button id="q-rapida" aria-pressed="false">Rápida</button>
+    </div>
+    <div class="seg" role="group" aria-label="Luces del garaje">
+      <button id="l-dia" aria-pressed="true">Luces prendidas</button>
+      <button id="l-noche" aria-pressed="false">Modo noche</button>
+    </div>
+    <div class="seg" role="group" aria-label="Comparar">
+      <button id="c-orig" aria-pressed="false">Original</button>
+      <button id="c-build" aria-pressed="true">Mi build</button>
+    </div>
+    <input type="file" id="glb" accept=".glb,.gltf,model/gltf-binary">
+    <label for="glb" class="btn" id="glb-label">Cargar escaneo</label>
+  </header>
+
+  <nav class="rail glass" aria-label="Categorías">
+    <h2>Arma tu moto</h2>
+    <div id="cats" style="display:contents"></div>
+  </nav>
+
+  <section class="panel glass" aria-label="Opciones">
+    <div class="ph">
+      <span class="kick" id="p-kick"></span>
+      <h3 id="p-name"></h3>
+      <p id="p-hint"></p>
+    </div>
+    <div class="opts" id="opts" role="group"></div>
+    <div class="pf"><small id="p-note">Los precios aparecen cuando conectemos los talleres y tiendas.</small></div>
+  </section>
+
+  <div class="views glass" role="group" aria-label="Cámara">
+    <button data-v="taller">Taller</button>
+    <button data-v="tq">3/4</button>
+    <button data-v="lado">Lado</button>
+    <button data-v="frente">Frente</button>
+    <button data-v="atras">Atrás</button>
+    <button id="spin" aria-pressed="true">Girar plataforma</button>
+  </div>
+  <div class="engine glass" role="group" aria-label="Motor">
+    <button id="eng-on" aria-pressed="false">Prender moto</button>
+    <button id="eng-gas" aria-pressed="false" disabled>Acelerar (mantén)</button>
+    <span class="tach" id="tach" hidden><span class="tbar"><span id="rpmbar"></span></span><b id="rpm">0 rpm</b></span>
+  </div>
+
+  <footer class="bottom glass">
+    <div class="bc"><span class="lab">Tu build</span><b id="b-count"></b></div>
+    <div class="chips" id="chips"></div>
+    <div class="total"><span class="lab">Total aprox.</span><b>[TOTAL] COP</b></div>
+    <div class="acts">
+      <button class="btn" id="reset">Volver a original</button>
+      <button class="btn" id="save">Guardar</button>
+      <button class="btn primary" id="share-btn">Compartir build</button>
+    </div>
+  </footer>
+  <div class="toast glass" id="toast" hidden></div>
+  <div class="modal" id="share" hidden role="dialog" aria-modal="true" aria-labelledby="share-t">
+    <div class="mbox glass">
+      <div class="mh"><span class="kick">Compartir</span><h3 id="share-t">Tu build</h3><button class="btn" id="share-close" aria-label="Cerrar">Cerrar</button></div>
+      <div class="mgrid">
+        <canvas id="photo" width="1080" height="1350" aria-label="Foto de tu build para redes"></canvas>
+        <div class="mside">
+          <label class="lab2" for="bname">Ponle nombre a tu build</label>
+          <input id="bname" class="inp" type="text" maxlength="28" placeholder="Ej. La Bronce Nocturna" autocomplete="off">
+          <p class="note">La foto sale en formato para Instagram, con las piezas de tu build y si pasa la tecnomecánica.</p>
+          <button class="btn primary wide" id="dl">Descargar foto</button>
+          <button class="btn wide" id="pub">Publicar en El parche</button>
+          <p class="note">En El parche los demás ven tu build, lo prueban en su moto y le dan like. El que más likes tenga es el build de la semana.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Reflector.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/geometries/DecalGeometry.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/fflate.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/EXRLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SAOShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/DepthLimitedBlurShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/UnpackDepthRGBAShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SAOPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SMAAShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SMAAPass.js"></script>
+<script>
+const WORKSHOP_EXR = "__EXR__";
+(function(){
+const stage = document.getElementById('stage');
+const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let renderer = null;
+try { renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance', preserveDrawingBuffer:true}); }
+catch(e){ stage.insertAdjacentHTML('beforeend','<div class="err">Tu navegador no pudo iniciar WebGL, así que el garaje 3D no se puede mostrar aquí.</div>'); }
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0b0c0f);
+scene.fog = new THREE.Fog(0x0b0c0f, 9, 16);
+const camera = new THREE.PerspectiveCamera(34, 1, .05, 60);
+const lights = {};
+let controls = null;
+if (renderer){
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.prepend(renderer.domElement);
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.dampingFactor = .07;
+  controls.minDistance = 1.3; controls.maxDistance = 7.6;
+  controls.maxPolarAngle = Math.PI*.48; controls.minPolarAngle = .3;
+  controls.enablePan = false;
+}
+
+/*__BIKE__*/
+
+/* =============== GARAJE: taller claro de techo alto =============== */
+const turn = new THREE.Group(); turn.name = 'plataforma'; scene.add(turn);
+scene.remove(bike); turn.add(bike);
+const RW = 12, RD = 10, RH = 6, ZB = -4.5, ZF = 5.5, XL = -6, XR2 = 6;
+let seed = 11; const rnd = ()=> (seed = (seed*9301+49297)%233280)/233280;
+const SIGNS = [];
+function sign(w,h,draw){ const t = canvasTex(w,h,draw); SIGNS.push([t,draw]); return t; }
+function box(w,h,d,mat,x,y,z,ry){ const m = mesh(new THREE.BoxGeometry(w,h,d), mat, x,y,z, 0, ry||0, 0); scene.add(m); return m; }
+function plane(w,h,mat,x,y,z,ry,rx){ const m = new THREE.Mesh(new THREE.PlaneGeometry(w,h), mat); m.position.set(x,y,z); m.rotation.set(rx||0, ry||0, 0, 'YXZ'); m.receiveShadow = true; scene.add(m); return m; }
+
+// Materiales del taller
+const wallTex = canvasTex(1024,1024,(g,w,h)=>{ g.fillStyle = '#ecebe6'; g.fillRect(0,0,w,h); for (let i=0;i<9000;i++){ g.fillStyle = rnd()<.5?'rgba(0,0,0,.025)':'rgba(255,255,255,.05)'; g.fillRect(rnd()*w,rnd()*h,2,2); }
+  for (let i=0;i<10;i++){ const x = rnd()*w; const gr = g.createLinearGradient(0,h*.6,0,h); gr.addColorStop(0,'rgba(80,70,60,0)'); gr.addColorStop(1,'rgba(80,70,60,.10)'); g.fillStyle = gr; g.fillRect(x,h*.6,40+rnd()*120,h*.4); } });
+wallTex.wrapS = wallTex.wrapT = THREE.RepeatWrapping; wallTex.repeat.set(2,1);
+const wallM = std(0xffffff,0,.88,{map:wallTex});
+const redM = std(0xc4291d,.05,.55);
+const baseM = std(0x8f9296,.05,.75);
+const colM = std(0x3d4744,.2,.6);
+const steelM = phong(0x9aa0a8,.3,0xffffff,70);
+const dkSteel = std(0x3b3e43,.45,.5);
+const blueM = std(0x1f5fbf,.25,.4);
+const orangeM = std(0xe35a17,.15,.45);
+const chestM = std(0xb3231a,.35,.4);
+const ledM = new THREE.MeshBasicMaterial({color:0xffffff, toneMapped:false});
+const winM = new THREE.MeshBasicMaterial({color:0xe3ecf6, toneMapped:false});
+
+scene.background = new THREE.Color(0xd9dbde); scene.fog = null;
+
+// Piso pintado con reflejo suave
+if (renderer){
+  const refl = new THREE.Reflector(new THREE.PlaneGeometry(RW,RD), {clipBias:.003, textureWidth:1024, textureHeight:1024, color:0x777777});
+  refl.rotation.x = -Math.PI/2; refl.position.z = (ZB+ZF)/2; scene.add(refl);
+}
+const floorTex = canvasTex(2048,1707,(g,w,h)=>{
+  const sx = w/RW, sz = h/RD, X = (x)=> (x-XL)*sx, Z = (z)=> (z-ZB)*sz;
+  g.fillStyle = 'rgba(58,60,63,.86)'; g.fillRect(0,0,w,h);
+  for (let i=0;i<50000;i++){ g.fillStyle = rnd()<.5?`rgba(255,255,255,${rnd()*.04})`:`rgba(0,0,0,${rnd()*.1})`; g.fillRect(rnd()*w,rnd()*h,1+rnd()*3,1+rnd()*3); }
+  g.strokeStyle = 'rgba(226,186,52,.95)'; g.lineWidth = 12;
+  g.strokeRect(X(-1.9),Z(-1.9),X(2.2)-X(-1.9),Z(2.6)-Z(-1.9));      // bahía de la plataforma
+  g.strokeRect(X(-4.9),Z(-2.0),X(-2.3)-X(-4.9),Z(1.9)-Z(-2.0));     // bahía del elevador
+  g.fillStyle = 'rgba(20,20,22,.9)'; g.fillRect(X(-.6),Z(3.2),X(.6)-X(-.6),Z(3.6)-Z(3.2));
+  g.strokeStyle = 'rgba(120,120,125,.9)'; g.lineWidth = 3; for (let x=X(-.6)+8;x<X(.6);x+=14){ g.beginPath(); g.moveTo(x,Z(3.2)+4); g.lineTo(x,Z(3.6)-4); g.stroke(); }
+  for (let i=0;i<4;i++){ const cx = X(-5+rnd()*10), cz = Z(-3+rnd()*7); const gr = g.createRadialGradient(cx,cz,0,cx,cz,40+rnd()*50); gr.addColorStop(0,'rgba(0,0,0,.28)'); gr.addColorStop(1,'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(cx-100,cz-100,200,200); }
+});
+const floorTop = new THREE.Mesh(new THREE.PlaneGeometry(RW,RD), new THREE.MeshStandardMaterial({map:floorTex, transparent:true, roughness:.5, metalness:.1, depthWrite:false}));
+floorTop.rotation.x = -Math.PI/2; floorTop.position.set(0,.002,(ZB+ZF)/2); scene.add(floorTop);
+const shadowCatch = new THREE.Mesh(new THREE.PlaneGeometry(RW,RD), new THREE.ShadowMaterial({opacity:.38}));
+shadowCatch.rotation.x = -Math.PI/2; shadowCatch.position.set(0,.004,(ZB+ZF)/2); shadowCatch.receiveShadow = true; scene.add(shadowCatch);
+
+// Paredes: blanco arriba, franja roja y zócalo gris
+function wallSet(len, cx, cz, ry){
+  const n = V(Math.sin(ry),0,Math.cos(ry)).multiplyScalar(.01);
+  plane(len,RH,wallM, cx,RH/2,cz, ry);
+  plane(len,1.0,baseM, cx+n.x,.5,cz+n.z, ry);
+  plane(len,.16,redM, cx+n.x*1.5,1.08,cz+n.z*1.5, ry);
+}
+wallSet(RW,0,ZB,0); wallSet(RW,0,ZF,Math.PI); wallSet(RD,XL,(ZB+ZF)/2,Math.PI/2); wallSet(RD,XR2,(ZB+ZF)/2,-Math.PI/2);
+[[XL+.15,ZB+.15],[XR2-.15,ZB+.15],[XL+.15,ZF-.15],[XR2-.15,ZF-.15],[XL+.15,.5],[XR2-.15,.5]].forEach(([x,z])=> box(.3,RH,.3,colM,x,RH/2,z));
+plane(RW,RD,std(0xcfd2d6,0,.9), 0,RH,(ZB+ZF)/2, 0, Math.PI/2);
+
+// Ventanas altas (entra luz de día)
+function windowRow(n, len, cx, cz, ry, y){
+  const dir = V(Math.cos(ry),0,-Math.sin(ry)), nrm = V(Math.sin(ry),0,Math.cos(ry));
+  for (let i=0;i<n;i++){ const off = (i-(n-1)/2)*(len/n); const p = V(cx,0,cz).add(dir.clone().multiplyScalar(off)).add(nrm.clone().multiplyScalar(.02));
+    plane(1.5,.62,winM, p.x,y,p.z, ry);
+    const fr = new THREE.Group(); fr.position.set(p.x,y,p.z); fr.rotation.y = ry; scene.add(fr);
+    [[1.6,.05,0,.33],[1.6,.05,0,-.33],[.05,.7,-.78,0],[.05,.7,.78,0],[.04,.66,-.26,0],[.04,.66,.26,0]].forEach(([w,h,x,y2])=> fr.add(mesh(new THREE.BoxGeometry(w,h,.06), dkSteel, x,y2,.02)));
+  }
+}
+windowRow(4,10,0,ZB,0,4.95); windowRow(3,8,XL,.5,Math.PI/2,4.95); windowRow(3,8,XR2,.5,-Math.PI/2,4.95);
+
+// Techo: claraboyas y cerchas metálicas
+[[-1.2],[1.2]].forEach(([z])=>{ const p = new THREE.Mesh(new THREE.BoxGeometry(9,.04,.9), ledM); p.position.set(0,RH-.03,z); scene.add(p); box(9.2,.1,1.05,dkSteel,0,RH-.06,z); });
+function truss(z){
+  const y0 = 5.05, y1 = 5.75;
+  box(RW-.4,.1,.12,steelM,0,y0,z); box(RW-.4,.1,.12,steelM,0,y1,z);
+  for (let x=XL+.4;x<=XR2-.4+1e-6;x+=.8){ box(.05,y1-y0,.06,steelM,x,(y0+y1)/2,z); if (x+.8<=XR2-.4+1e-6) scene.add(rod(V(x,y0,z),V(x+.8,y1,z),.025,steelM,6)); }
+}
+[-2.6,.8,4.1].forEach(truss);
+
+// Mezzanine al fondo con baranda, avisos y escalera
+const MZ = 2.8, MD = 2.2, MZF = ZB+MD;
+box(RW-.6,.16,MD,dkSteel,0,MZ,ZB+MD/2);
+box(RW-.6,.3,.08,std(0x23262a,.3,.6),0,MZ-.07,MZF+.02);
+[-4.1,-1.2,1.8,4.6].forEach(x=> box(.14,MZ,.14,dkSteel,x,MZ/2,MZF-.08));
+for (let x=XL+.4;x<=XR2-.4;x+=1.0) scene.add(rod(V(x,MZ+.08,MZF-.05),V(x,MZ+1.08,MZF-.05),.02,steelM,8));
+[1.06,.6].forEach(h=> scene.add(rod(V(XL+.4,MZ+h,MZF-.05),V(XR2-.4,MZ+h,MZF-.05),.022,steelM,8)));
+const bannerTex = sign(4096,240,(g,w,h)=>{
+  const P = [['#111111','#F2C230','LLANTAS 17"'],['#F2F0EA','#111111','MOTOPARTES'],['#F2C230','#111111','ACEITE 4T'],['#111111','#F2F0EA','FRENOS · SUSPENSIÓN'],['#C4291D','#F2F0EA','GARAJE BOG']];
+  const pw = w/P.length;
+  P.forEach(([bg,fg,t],i)=>{ g.fillStyle = bg; g.fillRect(i*pw+6,8,pw-12,h-16); g.fillStyle = fg; g.font = '800 italic 150px "Saira Extra Condensed", "Arial Narrow", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, i*pw+pw/2, h/2+8, pw-60); });
+});
+plane(RW-.8,.42,std(0xffffff,0,.6,{map:bannerTex}), 0,MZ-.42,MZF+.07, 0);
+const tunTex = sign(1200,360,(g,w,h)=>{ g.fillStyle = '#16171a'; g.fillRect(0,0,w,h); g.strokeStyle = '#F2F0EA'; g.lineWidth = 10; g.strokeRect(18,18,w-36,h-36); g.fillStyle = '#F2F0EA'; g.font = '800 italic 230px "Saira Extra Condensed", "Arial Narrow", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('TUNING', w/2, h/2+10); });
+plane(2.2,.66,std(0xffffff,0,.6,{map:tunTex}), -1.4,4.05,ZB+.02, 0);
+// estantería, llantas y gabinete arriba
+function shelf(x){ const g = new THREE.Group(); g.position.set(x,MZ+.08,ZB+.35); scene.add(g); [-.7,.7].forEach(dx=>{ g.add(mesh(new THREE.BoxGeometry(.04,1.6,.04), dkSteel, dx,.8,-.2)); g.add(mesh(new THREE.BoxGeometry(.04,1.6,.04), dkSteel, dx,.8,.2)); });
+  [.3,.85,1.4].forEach(y=> g.add(mesh(new THREE.BoxGeometry(1.44,.03,.45), steelM, 0,y,0)));
+  [[-.4,.36,.18,.2,0xd8c9a0],[.2,.36,.3,.2,0x8a6a44],[-.3,.91,.4,.16,0xF2C230],[.35,.93,.2,.22,0xc4291d],[0,1.46,.6,.12,0x5a5e64]].forEach(([dx,y,w,h,c])=> g.add(mesh(new THREE.BoxGeometry(w,h,.3), std(c,.1,.7), dx,y+h/2,0))); }
+shelf(-4.4); shelf(3.0);
+const rubberM = std(0x121212,0,.9);
+function tire(x,y,z){ scene.add(mesh(new THREE.TorusGeometry(.27,.1,16,40), rubberM, x,y,z, Math.PI/2)); }
+[0,1,2,3].forEach(i=> tire(-1.0,MZ+.18+i*.2,ZB+.5)); [0,1,2].forEach(i=> tire(-.3,MZ+.18+i*.2,ZB+.55));
+function chest(x,y,z,w,h,ry){ const g = new THREE.Group(); g.position.set(x,y,z); g.rotation.y = ry||0; scene.add(g); g.add(mesh(new THREE.BoxGeometry(w,h,.55), chestM, 0,h/2+.06,0));
+  const n = Math.max(3, Math.round(h/.14)); for (let i=0;i<n;i++){ const yy = .12+i*(h-.08)/n; g.add(mesh(new THREE.BoxGeometry(w-.06,.006,.01), std(0x111111,0,.6), 0,yy,.28)); g.add(mesh(new THREE.BoxGeometry(w*.35,.022,.03), steelM, 0,yy+.05,.29)); }
+  g.add(mesh(new THREE.BoxGeometry(w,.04,.56), steelM, 0,h+.08,0)); [-1,1].forEach(sx=> [-1,1].forEach(sz=> g.add(mesh(new THREE.CylinderGeometry(.035,.035,.06,10), rubberM, sx*(w/2-.08),.03,sz*.2)))); return g; }
+chest(1.4,MZ+.08,ZB+.4,1.2,.9);
+// escalera por la pared izquierda
+const SX0 = XL+.35, SX1 = XL+1.35, nSteps = 15, run = 3.6, zTop = MZF, zBot = MZF+run;
+for (let i=0;i<nSteps;i++){ const y = (i+1)*MZ/nSteps, z = zBot - (i+.5)*run/nSteps; box(SX1-SX0-.06,.04,run/nSteps+.02,steelM,(SX0+SX1)/2,y,z); }
+[SX0,SX1].forEach(x=>{ scene.add(rod(V(x,0,zBot),V(x,MZ,zTop),.04,dkSteel,6)); scene.add(rod(V(x,.95,zBot+.1),V(x,MZ+.95,zTop),.02,steelM,8)); [0,.5,1].forEach(t=>{ const z = zBot - t*run, y = t*MZ; scene.add(rod(V(x,y,z),V(x,y+.95,z),.018,steelM,6)); }); });
+
+// Elevador azul de dos columnas
+const LX = -3.6;
+[-1,1].forEach(s=>{ const x = LX + s*1.05; box(.26,2.5,.3,blueM,x,1.25,-.4); box(.5,.04,.5,blueM,x,.02,-.4); box(.16,.08,.14,dkSteel,x,1.0,-.4);
+  scene.add(mesh(new THREE.BoxGeometry(.9,.06,.1), blueM, x - s*.45, .5, -.05, 0, s*.5, 0)); scene.add(mesh(new THREE.BoxGeometry(.9,.06,.1), blueM, x - s*.45, .5, -.75, 0, -s*.5, 0)); });
+box(2.36,.12,.2,blueM,LX,2.56,-.4);
+scene.add(curve([V(LX-1.05,2.5,-.25),V(LX,2.3,-.2),V(LX+1.05,2.5,-.25)],.012,std(0x1a1a1a,0,.6),20));
+// compresor naranja
+(function(){ const g = new THREE.Group(); g.position.set(-5.0,0,2.4); g.rotation.y = .3; scene.add(g);
+  const tank = mesh(new THREE.CylinderGeometry(.18,.18,.7,24), orangeM, 0,.28,0, 0,0,Math.PI/2); g.add(tank);
+  g.add(mesh(new THREE.BoxGeometry(.32,.22,.24), std(0x4fa6c8,.2,.5), -.05,.56,0)); g.add(mesh(new THREE.CylinderGeometry(.06,.06,.06,16), steelM, .2,.5,0, Math.PI/2));
+  [-.25,.25].forEach(x=> g.add(mesh(new THREE.CylinderGeometry(.06,.06,.04,16), rubberM, x,.06,.17, Math.PI/2)));
+  g.add(curve([V(.3,.5,0),V(.6,.3,.2),V(.9,.05,.4),V(1.3,.02,.2)],.012,std(0x2e6fd0,.1,.5),30)); })();
+// recogedor de aceite
+(function(){ const g = new THREE.Group(); g.position.set(-2.1,0,1.6); scene.add(g);
+  g.add(mesh(new THREE.CylinderGeometry(.2,.2,.62,24), orangeM, 0,.42,0)); g.add(mesh(new THREE.CylinderGeometry(.04,.04,.9,12), orangeM, 0,1.18,0));
+  g.add(mesh(new THREE.CylinderGeometry(.24,.06,.18,24,1,true), orangeM, 0,1.68,0)); [-.15,.15].forEach(x=> g.add(mesh(new THREE.CylinderGeometry(.05,.05,.04,12), rubberM, x,.05,.12, Math.PI/2))); })();
+// cilindro de gas, extintores, aviso de no fumar, rejilla
+scene.add(mesh(new THREE.CylinderGeometry(.12,.12,1.3,20), std(0xf2f2ee,.2,.4), XL+.4,.65,3.6)); scene.add(mesh(new THREE.SphereGeometry(.12,16,10,0,Math.PI*2,0,Math.PI/2), std(0xf2f2ee,.2,.4), XL+.4,1.3,3.6)); scene.add(mesh(new THREE.CylinderGeometry(.03,.03,.1,10), std(0x3fb7c9,.3,.4), XL+.4,1.45,3.6));
+function extinguisher(x,z,ry){ const g = new THREE.Group(); g.position.set(x,1.25,z); g.rotation.y = ry; scene.add(g); g.add(mesh(new THREE.CylinderGeometry(.075,.075,.42,16), redM, 0,0,.1)); g.add(mesh(new THREE.CylinderGeometry(.02,.03,.08,10), dkSteel, 0,.25,.1)); }
+extinguisher(XL+.02,-1.6,Math.PI/2); extinguisher(XR2-.02,-1.0,-Math.PI/2); extinguisher(-2.0,ZB+.02,0);
+const noTex = sign(400,520,(g,w,h)=>{ g.fillStyle = '#f7f6f2'; g.fillRect(0,0,w,h); g.strokeStyle = '#c4291d'; g.lineWidth = 34; g.beginPath(); g.arc(w/2,190,140,0,Math.PI*2); g.stroke();
+  g.fillStyle = '#222'; g.fillRect(110,175,170,32); g.fillStyle = '#c96'; g.fillRect(270,175,26,32); g.beginPath(); g.moveTo(w/2-99,91); g.lineTo(w/2+99,289); g.stroke();
+  g.fillStyle = '#c4291d'; g.fillRect(20,370,w-40,130); g.fillStyle = '#fff'; g.font = '700 58px "Barlow", sans-serif'; g.textAlign = 'center'; g.fillText('NO FUMAR', w/2, 455); });
+plane(.4,.52,std(0xffffff,0,.7,{map:noTex}), XL+.02,1.9,-.6, Math.PI/2);
+const ventTex = canvasTex(256,256,(g,w,h)=>{ g.fillStyle = '#b9bcc0'; g.fillRect(0,0,w,h); for (let y=12;y<h-8;y+=16){ g.fillStyle = '#6f7378'; g.fillRect(14,y,w-28,7); } });
+plane(.7,.7,std(0xffffff,.4,.5,{map:ventTex}), XL+.02,3.6,1.6, Math.PI/2);
+// avisos altos en las paredes laterales
+const repTex = sign(300,1200,(g,w,h)=>{ g.fillStyle = '#E35A17'; g.fillRect(0,0,w,h); g.save(); g.translate(w/2,h/2); g.rotate(-Math.PI/2); g.fillStyle = '#111'; g.font = '800 italic 190px "Saira Extra Condensed", "Arial Narrow", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('REPUESTOS', 0, 10); g.restore(); });
+plane(.5,2.0,std(0xffffff,0,.6,{map:repTex}), XL+.03,3.2,-3.4, Math.PI/2);
+const serTex = sign(800,800,(g,w,h)=>{ g.fillStyle = '#F2F0EA'; g.fillRect(0,0,w,h); g.fillStyle = '#C4291D'; g.beginPath(); g.arc(w/2,h/2-40,250,0,Math.PI*2); g.fill(); g.fillStyle = '#F2F0EA'; g.font = '800 italic 190px "Saira Extra Condensed", "Arial Narrow", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('MOTO', w/2, h/2-40); g.fillStyle = '#111'; g.font = '700 90px "Barlow", sans-serif'; g.fillText('SERVICIO', w/2, h-80); });
+plane(1.1,1.1,std(0xffffff,0,.6,{map:serTex}), XR2-.03,3.6,-2.6, -Math.PI/2);
+
+// Bancos de herramientas rojos bajo el mezzanine, llantas y canecas
+chest(.9,0,ZB+.4,1.3,1.0); chest(2.4,0,ZB+.4,1.1,.85); chest(-5.3,0,ZB+1.3,.9,.8,Math.PI/2);
+[0,1,2].forEach(i=> tire(-.6,.1+i*.2,ZB+.55)); [0,1].forEach(i=> tire(-2.6,.1+i*.2,ZB+.5)); scene.add(mesh(new THREE.TorusGeometry(.27,.1,16,40), rubberM, -2.3,.36,ZB+.25));
+function drum(x,z,c){ scene.add(mesh(new THREE.CylinderGeometry(.29,.29,.88,32), std(c,.3,.5), x,.44,z)); [.1,.44,.78].forEach(y=> scene.add(mesh(new THREE.TorusGeometry(.292,.012,6,32), std(c,.3,.45), x,y,z,Math.PI/2))); }
+drum(5.2,3.9,0xe1c22a); drum(4.6,4.3,0xe1c22a); drum(5.3,-3.6,0x2a2c30);
+box(.5,.4,.4,std(0xd8c9a0,0,.8),4.6,.2,3.7);
+// cortina metálica en la pared derecha
+const shutterTex = canvasTex(256,512,(g,w,h)=>{ for (let y=0;y<h;y+=16){ const gr = g.createLinearGradient(0,y,0,y+16); gr.addColorStop(0,'#6b7076'); gr.addColorStop(.5,'#a3a8ae'); gr.addColorStop(1,'#4a4e54'); g.fillStyle = gr; g.fillRect(0,y,w,16); } });
+shutterTex.wrapS = shutterTex.wrapT = THREE.RepeatWrapping; shutterTex.repeat.set(4,3);
+plane(3.2,3.1,phong(0xffffff,.25,0xaaaaaa,40,{map:shutterTex}), XR2-.03,1.55,1.5, -Math.PI/2);
+box(.3,.35,3.5,dkSteel,XR2-.16,3.25,1.5); [-.1,3.1].forEach(dz=> box(.12,3.1,.12,dkSteel,XR2-.07,1.55,1.5-1.6+dz));
+// letrero GARAJE (luz cálida) sobre la cortina
+const neonDraw = (g,w,h)=>{ g.clearRect(0,0,w,h); g.fillStyle = '#16171a'; g.fillRect(0,0,w,h); g.font = '800 italic 200px "Saira Extra Condensed", "Arial Narrow", Impact, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.shadowColor = '#FF5B1F'; g.shadowBlur = 30; g.fillStyle = '#FFB089'; g.fillText('GARAJE', w/2, h/2+8); g.shadowBlur = 0; g.fillStyle = '#FFE6D8'; g.fillText('GARAJE', w/2, h/2+8); };
+const neonTex = sign(1200,300,neonDraw);
+plane(2.4,.6,new THREE.MeshBasicMaterial({map:neonTex, toneMapped:false}), XR2-.04,4.0,1.5, -Math.PI/2);
+
+// Plataforma giratoria
+const plat = mesh(new THREE.CylinderGeometry(1.55,1.6,.07,96), phong(0x2a2d32,.3,0x999999,90), 0,.035,0); turn.add(plat);
+const ringM = new THREE.MeshBasicMaterial({color:0xff5b1f, toneMapped:false});
+const ring = new THREE.Mesh(new THREE.TorusGeometry(1.585,.012,8,160), ringM); ring.rotation.x = Math.PI/2; ring.position.y = .07; scene.add(ring);
+bike.position.y = .07;
+
+// Iluminación de taller claro
+lights.hemi = new THREE.HemisphereLight(0xffffff, 0x8a8580, .85); scene.add(lights.hemi);
+lights.rimL = new THREE.DirectionalLight(0xfff6ea, .9); lights.rimL.position.set(1.5,6,1.2); lights.rimL.target.position.set(0,.5,0); scene.add(lights.rimL, lights.rimL.target);
+lights.rimL.castShadow = true; lights.rimL.shadow.mapSize.set(2048,2048); Object.assign(lights.rimL.shadow.camera,{left:-2.5,right:2.5,top:2.5,bottom:-2.5,near:1,far:12}); lights.rimL.shadow.bias = -.0004;
+function spot(x,y,z,i){ const s = new THREE.SpotLight(0xfff4e8, i, 14, .7, .8, 1.2); s.position.set(x,y,z); s.target.position.set(0,.5,0); scene.add(s, s.target); return s; }
+lights.spots = [spot(0,RH-.2,2.4,.9), spot(-2,RH-.2,-1.2,.6), spot(2.2,RH-.2,-1.2,.6)];
+lights.lamps = [[-3.5,1.5],[3.5,1.5],[0,4]].map(([x,z])=>{ const p = new THREE.PointLight(0xfff1e0,.35,9,2); p.position.set(x,4.6,z); scene.add(p); return p; });
+lights.neon = new THREE.PointLight(0xff6a2a,.5,5,2); lights.neon.position.set(XR2-.6,3.9,1.5); scene.add(lights.neon);
+lights.ring = new THREE.PointLight(0xff5b1f,.25,3,2); lights.ring.position.set(0,.25,0); scene.add(lights.ring);
+
+/* =============== ESTADO + UI =============== */
+const $ = (id)=> document.getElementById(id);
+function esc(t){ return String(t).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+let tt = null;
+function toast(t){ const el = $('toast'); el.textContent = t; el.hidden = false; clearTimeout(tt); tt = setTimeout(()=>{ el.hidden = true; }, 2400); }
+
+/* ---- Catálogo: marcas y modelos que se venden en Colombia ---- */
+const TOP = {'akt-nkd-125':1,'yamaha-nmax-155':2,'bajaj-ct100':3,'honda-xr-190l':4,'yamaha-xtz-150':6};
+const CAT = [
+  ['AKT',[['NKD 125','125','Urbana'],['CR4 125','125','Urbana'],['TT DS 200','200','Doble propósito']]],
+  ['Bajaj',[['Boxer CT100','100','Urbana','bajaj-ct100'],['CT125','125','Urbana'],['Pulsar N125','125','Naked'],['Pulsar NS 160','160','Naked'],['Pulsar NS 200','200','Naked'],['Pulsar N250','250','Naked'],['Dominar 400','373','Touring']]],
+  ['Suzuki',[['Gixxer 150','155','Naked'],['Gixxer 250','249','Naked'],['GN 125','125','Urbana'],['DR 150','150','Doble propósito'],['V-Strom 160','160','Doble propósito']]],
+  ['Honda',[['XR 190L','184','Doble propósito'],['XR 150L','150','Doble propósito'],['CB 125F','125','Urbana'],['CB 190R','184','Naked'],['XRE 300','286','Doble propósito']]],
+  ['Yamaha',[['NMAX 155','155','Scooter'],['XTZ 150','149','Doble propósito'],['XTZ 250','249','Doble propósito'],['FZ 2.0 (FZN 150)','149','Naked'],['T115 Crypton','115','Urbana'],['YBR 125','125','Urbana'],['MT-03','321','Naked'],['R15','155','Deportiva']]],
+  ['Hero',[['Hunk 125 R','125','Naked'],['Hunk 160 4V','160','Naked'],['Xpulse 200','200','Doble propósito']]],
+  ['TVS',[['Raider 125','125','Urbana'],['Apache RTR 160 4V','160','Naked'],['Apache RTR 200 4V','200','Naked']]],
+  ['Victory',[['MRX 150','150','Doble propósito']]],
+  ['KTM',[['Duke 200','200','Naked'],['Duke 390','373','Naked']]],
+  ['Royal Enfield',[['Classic 350','349','Clásica'],['Himalayan','411','Doble propósito']]],
+];
+const slug = (t)=> t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const MODELS = [];
+CAT.forEach(([b,list])=> list.forEach(([m,cc,kind,id])=>{ const k = id || slug(b+' '+m); MODELS.push({id:k, brand:b, model:m, cc, kind, top:TOP[k]||0}); }));
+const GIX = 'suzuki-gixxer-150';
+const TYPES = ['Todas','Urbana','Naked','Doble propósito','Scooter','Deportiva','Touring','Clásica'];
+
+/* ---- Pintura por zonas ---- */
+const FIN = {brillante:['Brillante',.15,.25,80], mate:['Mate',.05,.85,6], metalico:['Metálico',.6,.3,120], perlado:['Perlado',.35,.18,150], cromado:['Cromado',.7,.12,240]};
+const SWATCH = ['#121214','#3a3d43','#80858a','#b9bdc2','#eceae4','#6e4224','#b5652f','#c9a227','#c8b48a','#4b5634','#c1201a','#e2621a','#f2c230','#2f6fe0','#1c2a4a','#5b2c83','#d63a8c','#2fb6a8'];
+const HAND_ZONES = [
+  {k:'tanque', n:'Tanque y guardabarros', mats:[M.paint], hex:'#6e4224', fin:'metalico'},
+  {k:'flancos', n:'Flancos y farola', mats:[M.accent], hex:'#6e4224', fin:'metalico'},
+  {k:'rines', n:'Rines', mats:[M.rim], hex:'#0f0f10', fin:'brillante'},
+  {k:'chasis', n:'Chasis y tijera', mats:[M.frame], hex:'#131315', fin:'mate'},
+  {k:'calipers', n:'Calipers', mats:[M.gold], hex:'#c4921f', fin:'metalico'},
+  {k:'resorte', n:'Resorte del amortiguador', mats:[M.spring], hex:'#c41e1e', fin:'brillante'},
+];
+const COMBOS = {
+  bronce:{n:'Bronce de fábrica', z:{tanque:['#6e4224','metalico'], flancos:['#6e4224','metalico'], rines:['#0f0f10','brillante']}, decal:{line:'#d22a1f', band:'#c8261c', cream:'#e6d3a4'}},
+  negro:{n:'Negro mate + bronce', z:{tanque:['#151516','mate'], flancos:['#9c6532','metalico'], rines:['#9c6532','metalico']}, decal:{line:'#b07a42', band:'#8a5a2c', cream:'#d9b88a'}},
+  nardo:{n:'Gris nardo + naranja', z:{tanque:['#80858a','brillante'], flancos:['#161617','brillante'], rines:['#141414','brillante']}, decal:{line:'#e2621a', band:'#d2561a', cream:'#f0ece6'}},
+};
+function setFinish(m, hex, f){
+  const F = FIN[f]; m.color.set(hex);
+  if (m.isMeshStandardMaterial){ m.metalness = F[1]; m.roughness = F[2]; }
+  else if (m.isMeshPhongMaterial){ m.shininess = F[3]; if (m.envMap) m.reflectivity = f==='cromado' ? .85 : (f==='mate' ? .02 : .25); }
+  m.needsUpdate = true;
+}
+
+/* ---- Piezas (solo en el modelo de prueba) y accesorios ---- */
+const PARTS = [
+  {k:'llantas', n:'Rines y llantas', o:[['Tapas con llamas','Las que trae ahora.'],['Radios + semitaco','Sin tapas y llanta doble propósito, misma medida.']]},
+  {k:'exhosto', n:'Exhosto', o:[['Original cromado','Con protector y punta en gota.'],['Slip-on corto','Negro, punta de titanio y db-killer removible.']]},
+  {k:'faro', n:'Farola', o:[['Farola original','En punta, con visera.'],['Redonda LED 7"','Con halo de día, luz alta y baja.']]},
+  {k:'manubrio', n:'Manubrio', o:[['Tubular + espejos hexagonales','El de fábrica.'],['Drag bar + espejos de punta','Más plano y ancho.']]},
+  {k:'asiento', n:'Sillín', o:[['Doble camuflado','El que trae.'],['Monoplaza en cuero','Cuero café con colín pintado.']]},
+  {k:'cola', n:'Cola', o:[['Guardabarros largo','El de fábrica.'],['Cola corta (tail tidy)','Porta placa corto, placa visible.']]},
+];
+const ACCS = [
+  {k:'baul', n:'Baúl trasero', d:'Para el casco y el impermeable, con parrilla.', tag:'El más pedido'},
+  {k:'sliders', n:'Sliders de motor', d:'Protegen el motor y las tapas en una caída.', tag:'Seguridad'},
+  {k:'exploradoras', n:'Exploradoras LED', d:'Dos luces auxiliares en las barras.', tag:'Revisar norma'},
+  {k:'protectores', n:'Protectores de manos', d:'Cuidan las manos y las maniguetas del viento y las caídas.', tag:'Seguridad'},
+  {k:'celular', n:'Porta celular', d:'Soporte en el manubrio para el GPS.', tag:'Domiciliarios'},
+];
+const ACC = {};
+function accG(k){ const g = new THREE.Group(); g.name = 'acc_'+k; g.visible = false; bike.add(g); ACC[k] = g; return g; }
+(function(){
+  const g = accG('baul');
+  g.add(at(slab(.3,.26,.015,.02,M.alu),-.76,.955,0));
+  [-1,1].forEach(s=> g.add(rod(V(-.6,.84,s*.1),V(-.72,.95,s*.11),.008,M.alu,8)));
+  g.add(at(slab(.4,.36,.2,.07,M.plastic),-.78,1.07,0));
+  g.add(at(slab(.41,.37,.09,.07,M.gloss),-.78,1.2,0));
+  g.add(mesh(new THREE.BoxGeometry(.006,.03,.2), M.tail, -.985,1.08,0));
+})();
+(function(){ const g = accG('sliders'); [-1,1].forEach(s=>{ g.add(mesh(new THREE.CylinderGeometry(.03,.034,.09,20), M.plastic, .13,.5,s*.205, Math.PI/2)); g.add(mesh(new THREE.CylinderGeometry(.022,.022,.03,16), M.alu, .13,.5,s*.15, Math.PI/2)); }); })();
+(function(){ const g = accG('exploradoras'); [-1,1].forEach(s=>{
+  g.add(mesh(new THREE.CylinderGeometry(.034,.03,.07,20), M.plastic, .56,.62,s*.16, 0,0,Math.PI/2));
+  g.add(mesh(new THREE.CircleGeometry(.029,24), M.lens, .596,.62,s*.16, 0,Math.PI/2,0));
+  g.add(rod(V(.52,.62,s*.1),V(.54,.62,s*.15),.007,M.alu,8));
+  const gl = glow(0xfff1dd,.14,.62,.62,s*.16); g.add(gl); }); })();
+(function(){ const g = accG('protectores'); const cx = FT.x-.005, y = 1.02, half = .37, sw = .08;
+  [-1,1].forEach(s=>{ g.add(mesh(new THREE.BoxGeometry(.014,.075,.15), M.gloss, cx-sw+.075, y+.03, s*(half-.05), 0, s*.25, 0)); g.add(mesh(new THREE.BoxGeometry(.016,.02,.15), std(0xe35a17,.1,.5), cx-sw+.078, y+.075, s*(half-.05), 0, s*.25, 0)); }); })();
+(function(){ const g = accG('celular'); const x = FT.x-.03;
+  g.add(mesh(new THREE.CylinderGeometry(.012,.012,.06,10), M.alu, x,1.06,0));
+  const ph = new THREE.Group(); ph.position.set(x-.01,1.15,0); ph.rotation.z = -.4; g.add(ph);
+  ph.add(mesh(new THREE.BoxGeometry(.012,.16,.082), M.plastic)); ph.add(mesh(new THREE.PlaneGeometry(.07,.14), M.lcd, -.007,0,0, 0,-Math.PI/2,0)); })();
+
+/* ---- Estado ---- */
+const st = {tab:'moto', model:GIX, q:'', type:'Todas', brand:'Todas', zone:'tanque', combo:'bronce',
+  paint:{}, parts:{faro:'stock',manubrio:'stock',asiento:'stock',cola:'stock',exhosto:'stock',llantas:'stock'}, acc:{},
+  design:'franjas', dsize:.18, drot:0, placing:false, showOrig:false};
+HAND_ZONES.forEach(z=> st.paint[z.k] = [z.hex, z.fin]);
+let night = false;
+const loaded = {};          // modelo -> Object3D cargado desde .glb
+const zoneMap = {};        // modelo -> zonas (materiales) del .glb
+const decals = [];
+
+function curModel(){ return MODELS.find(m=> m.id===st.model); }
+function activeObj(){ return loaded[st.model] || (st.model===GIX ? bike : null); }
+function isHand(){ return !loaded[st.model] && st.model===GIX; }
+function zones(){ return isHand() ? HAND_ZONES : (zoneMap[st.model]||[]); }
+
+function applyAll(){
+  Object.values(loaded).forEach(o=> o.visible = false);
+  bike.visible = false;
+  const obj = activeObj(); if (obj) obj.visible = true;
+  $('nomodel').hidden = !!obj;
+  if (!obj){ const m = curModel(); $('nm-name').textContent = m.brand+' '+m.model; }
+  const hand = isHand(), O = st.showOrig;
+  Object.entries(slots).forEach(([k,s])=>{ const b = hand && !O && st.parts[k]==='biker'; s.biker.visible = b; s.stock.visible = !b; });
+  Object.entries(ACC).forEach(([k,g])=> g.visible = hand && !O && !!st.acc[k]);
+  zones().forEach(z=>{ const [hex,f] = O ? [z.hex,z.fin] : (st.paint[z.k] || [z.hex,z.fin]); z.mats.forEach(m=> setFinish(m,hex,f)); });
+  decals.forEach(d=> d.visible = !O && d.userData.model===st.model);
+  if (lights.beam) lights.beam.intensity = hand && !O && st.parts.faro==='biker' ? (night ? 2.6 : .6) : 0;
+}
+function changes(){
+  const out = [];
+  if (!activeObj()) return out;
+  zones().forEach(z=>{ const p = st.paint[z.k]; if (p && (p[0].toLowerCase()!==z.hex.toLowerCase() || p[1]!==z.fin)) out.push('Pintura · '+z.n); });
+  const nd = decals.filter(d=> d.userData.model===st.model).length; if (nd) out.push(nd===1 ? '1 diseño' : nd+' diseños');
+  if (isHand()){ PARTS.forEach(p=>{ if (st.parts[p.k]==='biker') out.push(p.o[1][0]); }); ACCS.forEach(a=>{ if (st.acc[a.k]) out.push(a.n); }); }
+  return out;
+}
+
+/* ---- Paneles ---- */
+const TABS = [
+  {k:'moto', n:'Tu moto'},
+  {k:'pintura', n:'Pintura'},
+  {k:'disenos', n:'Diseños'},
+  {k:'piezas', n:'Piezas'},
+  {k:'accesorios', n:'Accesorios'},
+  {k:'revision', n:'Tecnomecánica'},
+  {k:'parche', n:'El parche'},
+];
+function tabSub(k){
+  const m = curModel();
+  if (k==='moto') return m.brand+' '+m.model;
+  if (k==='parche') return builds.length ? builds.length+(builds.length===1?' build publicado':' builds publicados') : 'Builds de la comunidad';
+  if (!activeObj()) return 'Primero carga la moto';
+  if (k==='pintura'){ const n = changes().filter(t=> t.startsWith('Pintura')).length; return n ? n+(n===1?' zona pintada':' zonas pintadas') : 'De fábrica'; }
+  if (k==='disenos'){ const n = decals.filter(d=> d.userData.model===st.model).length; return n ? n+(n===1?' diseño':' diseños') : 'Sin diseños'; }
+  if (k==='piezas'){ if (!isHand()) return 'Pronto en tu escaneo'; const n = PARTS.filter(p=> st.parts[p.k]==='biker').length; return n ? n+(n===1?' pieza nueva':' piezas nuevas') : 'De fábrica'; }
+  if (k==='revision'){ const rv = revSummary(); return rv ? rv.txt : 'Primero carga la moto'; }
+  if (k==='accesorios'){ if (!isHand()) return 'Pronto en tu escaneo'; const n = ACCS.filter(a=> st.acc[a.k]).length; return n ? n+(n===1?' accesorio':' accesorios') : 'Ninguno'; }
+}
+function tabMod(k){
+  if (k==='revision'){ const rv = revSummary(); return !!(rv && rv.w); }
+  if (!activeObj() || k==='moto' || k==='parche') return false;
+  if (k==='pintura') return changes().some(t=> t.startsWith('Pintura'));
+  if (k==='disenos') return decals.some(d=> d.userData.model===st.model);
+  if (k==='piezas') return isHand() && PARTS.some(p=> st.parts[p.k]==='biker');
+  if (k==='accesorios') return isHand() && ACCS.some(a=> st.acc[a.k]);
+}
+const swatchBtns = (cur)=> SWATCH.map(h=> `<button class="swb" data-hex="${h}" aria-label="Color ${h}" aria-pressed="${cur.toLowerCase()===h}" style="background:${h}"></button>`).join('');
+function needModel(){ return `<div class="empty"><b>Primero carga esta moto en 3D</b><span>Escanéala con el celular y sube el archivo .glb, o mira la Gixxer 150 de prueba.</span><label for="glb" class="btn">Cargar escaneo (.glb)</label></div>`; }
+
+function renderPanel(){
+  const m = curModel(), hand = isHand(), obj = activeObj();
+  const H = {moto:['Paso 1','Busca tu moto','Marcas y modelos que se venden en Colombia.'],
+    pintura:['Paso 2','Pintura', hand ? 'Escoge la zona y dale el color y el acabado que quieras.' : 'En un escaneo el color se aplica como tinte sobre la textura real.'],
+    disenos:['Paso 3','Diseños','Escoge un diseño o sube tu imagen y tócala sobre la moto para pegarla.'],
+    piezas:['Paso 4','Piezas','Cambia piezas de fábrica por piezas de otras referencias.'],
+    accesorios:['Paso 5','Accesorios','Lo que más le meten los moteros en Colombia.'],
+    revision:['Antes de salir','Tecnomecánica','Revisa si tu build pasa la revisión técnico-mecánica.'],
+    parche:['Comunidad','El parche','Builds de otros moteros. Pruébalos en tu moto y dales like.']}[st.tab];
+  $('p-kick').textContent = H[0]; $('p-name').textContent = H[1]; $('p-hint').textContent = H[2];
+  let h = '';
+  if (st.tab==='moto'){
+    const q = st.q.trim().toLowerCase();
+    const list = MODELS.filter(x=> (st.brand==='Todas' || x.brand===st.brand) && (st.type==='Todas' || x.kind===st.type) && (!q || (x.brand+' '+x.model).toLowerCase().includes(q)));
+    h += `<label class="lab2" for="q">Buscar marca o modelo</label><input id="q" class="inp" type="search" placeholder="Ej. Pulsar NS 200" value="${esc(st.q)}" autocomplete="off">`;
+    h += `<div class="chiprow scroll" role="group" aria-label="Marca">${['Todas'].concat(CAT.map(c=>c[0])).map(b=> `<button class="pill" data-brand="${esc(b)}" aria-pressed="${st.brand===b}">${esc(b)}</button>`).join('')}</div>`;
+    h += `<div class="chiprow scroll" role="group" aria-label="Tipo">${TYPES.map(t=> `<button class="pill sm" data-type="${esc(t)}" aria-pressed="${st.type===t}">${esc(t)}</button>`).join('')}</div>`;
+    h += `<div class="mlist">${list.length ? list.map(x=>{ const ready = !!loaded[x.id], test = x.id===GIX;
+      const badge = ready ? '<span class="bd ok">3D listo</span>' : (test ? '<span class="bd test">Modelo de prueba</span>' : '<span class="bd">Falta el 3D</span>');
+      return `<button class="mrow" data-model="${x.id}" aria-pressed="${st.model===x.id}"><span class="mt"><span class="mb">${esc(x.brand)}</span><span class="mm">${esc(x.model)}</span></span><span class="mi"><span>${x.cc} cc · ${esc(x.kind)}</span>${badge}</span>${x.top?`<span class="topn">Top ${x.top} en ventas</span>`:''}</button>`; }).join('') : '<p class="note">No encontré esa moto. Revisa cómo la escribiste o quita los filtros.</p>'}</div>`;
+    h += `<p class="note">Las marcas y modelos aparecen solo para que ubiques tu moto. Los modelos 3D oficiales se consiguen con escaneos o con acuerdos con cada marca.</p>`;
+  }
+  else if (st.tab==='parche'){ h = parcheHTML(); }
+  else if (!obj){ h = needModel(); }
+  else if (st.tab==='revision'){ const it = revItems(), rv = revSummary();
+    h = `<div class="revtop ${rv.w?'warn':'ok'}"><b>${esc(rv.txt)}</b><span>${rv.w ? 'Arregla esto antes de ir al CDA.' : 'Con lo que tiene, tu moto debería pasar.'}</span></div><div class="olist">${it.map(i=> `<div class="rv ${i.s}"><span class="rvd" aria-hidden="true"></span><span><b>${esc(i.n)}</b><span>${esc(i.d)}</span></span><span class="rvs">${i.s==='ok'?'Bien':'Revisar'}</span></div>`).join('')}</div><p class="note">Es una guía para orientarte. La decisión final la toma el CDA en la revisión.</p>`; }
+  else if (st.tab==='pintura'){
+    if (hand) h += `<div class="lab2">Combinaciones rápidas</div><div class="chiprow">${Object.entries(COMBOS).map(([k,c])=> `<button class="pill" data-combo="${k}" aria-pressed="${st.combo===k}">${esc(c.n)}</button>`).join('')}</div>`;
+    const Z = zones();
+    h += `<div class="lab2">Zona</div><div class="zlist">${Z.map(z=>{ const p = st.paint[z.k]||[z.hex,z.fin]; return `<button class="zrow" data-zone="${z.k}" aria-pressed="${st.zone===z.k}"><span class="dot" style="background:${p[0]}"></span><span>${esc(z.n)}</span><span class="zf">${FIN[p[1]][0]}</span></button>`; }).join('')}</div>`;
+    const z = Z.find(z=> z.k===st.zone) || Z[0];
+    if (z){ const p = st.paint[z.k]||[z.hex,z.fin];
+      h += `<div class="lab2">Color de ${esc(z.n.toLowerCase())}</div><div class="swgrid">${swatchBtns(p[0])}</div>`;
+      h += `<div class="pick"><input type="color" id="cpick" value="${p[0]}" aria-label="Escoger cualquier color"><label for="cpick">Cualquier color</label><span class="hex">${p[0].toUpperCase()}</span></div>`;
+      h += `<div class="lab2">Acabado</div><div class="seg2" role="group" aria-label="Acabado">${Object.entries(FIN).map(([k,f])=> `<button data-fin="${k}" aria-pressed="${p[1]===k}">${f[0]}</button>`).join('')}</div>`;
+      h += `<button class="btn ghost" id="z-reset">Dejar esta zona de fábrica</button>`;
+    }
+  }
+  else if (st.tab==='disenos'){
+    h += `<div class="dgrid">${DESIGNS.map(d=> `<button class="dsg" data-design="${d.k}" aria-pressed="${st.design===d.k}"><img src="${d.thumb}" alt=""><span>${esc(d.n)}</span></button>`).join('')}
+      <label class="dsg up" for="dimg"><span class="plus" aria-hidden="true">+</span><span>Sube tu diseño</span></label></div>
+      <input type="file" id="dimg" accept="image/png,image/jpeg,image/webp" class="vh">`;
+    if (st.design==='numero') h += `<label class="lab2" for="dnum">Tu número</label><input id="dnum" class="inp" type="text" maxlength="3" value="${esc(numTxt)}">`;
+    h += `<label class="lab2" for="dsize">Tamaño · ${Math.round(st.dsize*100)} cm</label><input type="range" id="dsize" min="6" max="40" value="${Math.round(st.dsize*100)}">`;
+    h += `<label class="lab2" for="drot">Giro · ${Math.round(st.drot)}°</label><input type="range" id="drot" min="-180" max="180" value="${Math.round(st.drot)}">`;
+    h += `<button class="btn primary wide" id="place" aria-pressed="${st.placing}">${st.placing ? 'Toca la moto para pegarlo' : 'Pegar en la moto'}</button>`;
+    h += `<div class="row2"><button class="btn" id="d-undo">Quitar el último</button><button class="btn" id="d-clear">Quitar todos</button></div>`;
+    h += `<p class="note">Tip: acércate con la cámara a la zona antes de pegarlo. Las fotos o logos de otras marcas solo si tienes permiso de usarlos.</p>`;
+  }
+  else if (st.tab==='piezas'){
+    if (!hand) h = `<div class="empty"><b>Las piezas se cambian por partes</b><span>Para cambiar piezas de tu escaneo hay que separarlo en partes con nombre (farola, exhosto, cola…). Mientras tanto puedes pintarlo y ponerle diseños.</span></div>`;
+    else PARTS.forEach(p=>{ h += `<div class="lab2">${esc(p.n)}</div><div class="olist">${p.o.map((o,i)=> `<button class="opt" data-part="${p.k}" data-v="${i?'biker':'stock'}" aria-pressed="${st.parts[p.k]===(i?'biker':'stock')}"><span class="row"><span class="on">${esc(o[0])}</span><span class="pr">${i?'[PRECIO]':'De fábrica'}</span></span><span class="od">${esc(o[1])}</span></button>`).join('')}</div>`; });
+  }
+  else if (st.tab==='accesorios'){
+    if (!hand) h = `<div class="empty"><b>Los accesorios necesitan puntos de anclaje</b><span>Cuando separemos tu escaneo por partes, cada accesorio sabrá dónde montarse.</span></div>`;
+    else h = `<div class="olist">${ACCS.map(a=> `<button class="opt acc" data-acc="${a.k}" aria-pressed="${!!st.acc[a.k]}"><span class="row"><span class="on">${esc(a.n)}</span><span class="pr">${st.acc[a.k]?'Puesto':'[PRECIO]'}</span></span><span class="od">${esc(a.d)}</span><span class="tags"><span class="tag">${esc(a.tag)}</span></span></button>`).join('')}</div>`;
+  }
+  $('opts').innerHTML = h;
+  if (st.tab==='parche') fillNames();
+}
+function render(){
+  const m = curModel();
+  $('cats').innerHTML = TABS.map(t=> `<button class="cat${t.k===st.tab?' on':''}${tabMod(t.k)?' mod':''}" data-k="${t.k}" aria-pressed="${t.k===st.tab}"><span><span class="n">${esc(t.n)}</span><span class="s">${esc(tabSub(t.k))}</span></span><span class="m" aria-hidden="true"></span></button>`).join('');
+  $('moto-k').textContent = m.brand; $('moto-n').textContent = m.model;
+  renderPanel();
+  const ch = changes();
+  $('b-count').textContent = !activeObj() ? 'Moto sin modelo 3D' : (ch.length===1 ? '1 cambio' : ch.length+' cambios');
+  $('chips').innerHTML = ch.map(t=> `<span class="chip">${esc(t)}</span>`).join('');
+  $('c-orig').setAttribute('aria-pressed', st.showOrig); $('c-build').setAttribute('aria-pressed', !st.showOrig);
+  stage.classList.toggle('placing', st.placing);
+  applyAll();
+}
+
+/* ---- Diseños (calcomanías) ---- */
+let numTxt = '07';
+function designCanvas(k, size){
+  const c = document.createElement('canvas'); c.width = c.height = size||512; const g = c.getContext('2d'), W = c.width;
+  g.clearRect(0,0,W,W);
+  if (k==='franjas'){ g.fillStyle = '#f3f1ec'; g.fillRect(W*.18,0,W*.22,W); g.fillRect(W*.6,0,W*.22,W); g.fillStyle = '#c1201a'; g.fillRect(W*.45,0,W*.1,W); }
+  else if (k==='llamas'){ const grd = g.createLinearGradient(0,0,W,0); grd.addColorStop(0,'#ffd23a'); grd.addColorStop(.5,'#ff7a1a'); grd.addColorStop(1,'#d3201a'); g.fillStyle = grd;
+    g.beginPath(); g.moveTo(0,W*.3); for (let i=0;i<6;i++){ const y = W*(.18+i*.11); g.quadraticCurveTo(W*(.55+.08*(i%2)), y-W*.1, W*(.98-.06*i), y); g.quadraticCurveTo(W*.5, y+W*.02, W*.08, y+W*.08); } g.lineTo(0,W*.82); g.closePath(); g.fill(); }
+  else if (k==='numero'){ g.fillStyle = '#f3f1ec'; g.beginPath(); g.arc(W/2,W/2,W*.46,0,Math.PI*2); g.fill(); g.lineWidth = W*.035; g.strokeStyle = '#111'; g.stroke();
+    g.fillStyle = '#111'; g.font = `800 italic ${W*.5}px "Saira Extra Condensed", "Arial Narrow", Impact, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(numTxt||'07', W/2, W*.53, W*.8); }
+  else if (k==='rayo'){ g.fillStyle = '#f2c230'; g.beginPath(); [[.58,.04],[.2,.56],[.46,.56],[.36,.96],[.82,.38],[.54,.38],[.7,.04]].forEach(([x,y],i)=> i ? g.lineTo(x*W,y*W) : g.moveTo(x*W,y*W)); g.closePath(); g.fill(); g.lineWidth = W*.02; g.strokeStyle = '#111'; g.stroke(); }
+  else if (k==='camuflado'){ let s = 5; const r = ()=> (s = (s*9301+49297)%233280)/233280; const cols = ['#2e3324','#4b5634','#6b6a45','#1e211a']; g.save(); g.beginPath(); g.roundRect ? g.roundRect(W*.02,W*.02,W*.96,W*.96,W*.08) : g.rect(W*.02,W*.02,W*.96,W*.96); g.clip();
+    g.fillStyle = '#556040'; g.fillRect(0,0,W,W); for (let i=0;i<70;i++){ g.fillStyle = cols[i%4]; g.beginPath(); const x = r()*W, y = r()*W, R = W*(.05+r()*.09); for (let a=0;a<=12;a++){ const t = a/12*Math.PI*2, rr = R*(.6+r()*.6); g.lineTo(x+Math.cos(t)*rr*1.4, y+Math.sin(t)*rr); } g.closePath(); g.fill(); } g.restore(); }
+  else if (k==='carbono'){ g.save(); g.beginPath(); g.rect(W*.02,W*.02,W*.96,W*.96); g.clip(); const n = 24, q = W/n; for (let y=0;y<n;y++) for (let x=0;x<n;x++){ const grd = g.createLinearGradient(x*q,y*q,(x+1)*q,(y+1)*q); const a = (x+y)%2; grd.addColorStop(0, a?'#2b2c30':'#141517'); grd.addColorStop(1, a?'#18191c':'#2a2b2f'); g.fillStyle = grd; g.fillRect(x*q,y*q,q,q); } g.restore(); }
+  else if (k==='calle'){ g.fillStyle = '#f3f1ec'; g.font = `800 italic ${W*.36}px "Saira Extra Condensed", "Arial Narrow", Impact, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.lineWidth = W*.03; g.strokeStyle = '#111'; g.strokeText('CALLE', W/2, W/2); g.fillText('CALLE', W/2, W/2); g.fillStyle = '#ff5b1f'; g.fillRect(W*.12,W*.7,W*.76,W*.05); }
+  return c;
+}
+const DESIGNS = [['franjas','Franjas racing'],['llamas','Llamas'],['numero','Número'],['rayo','Rayo'],['camuflado','Camuflado'],['carbono','Fibra de carbono'],['calle','Calle']].map(([k,n])=> ({k, n, thumb: designCanvas(k,128).toDataURL()}));
+let userImg = null;
+function designTexture(){
+  let c;
+  if (st.design==='propio' && userImg){ c = document.createElement('canvas'); const s = 512; c.width = c.height = s; const g = c.getContext('2d'); const r = Math.min(s/userImg.width, s/userImg.height); const w = userImg.width*r, hh = userImg.height*r; g.drawImage(userImg,(s-w)/2,(s-hh)/2,w,hh); }
+  else c = designCanvas(st.design, 512);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t;
+}
+const pickRay = new THREE.Raycaster(), ndc = new THREE.Vector2(), helper = new THREE.Object3D();
+function decalTargets(){ const obj = activeObj(), out = []; if (!obj) return out; obj.traverse(o=>{ if (o.isMesh && !o.userData.isDecal && o.visible){ let v = true; for (let p=o; p; p=p.parent){ if (!p.visible){ v = false; break; } } if (v && !(o.material && o.material.isSpriteMaterial)) out.push(o); } }); return out; }
+function placeAt(ev){
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX-r.left)/r.width)*2-1, -((ev.clientY-r.top)/r.height)*2+1);
+  pickRay.setFromCamera(ndc, camera);
+  const hit = pickRay.intersectObjects(decalTargets(), false)[0];
+  if (!hit){ toast('Toca encima de la moto'); return; }
+  const n = hit.face.normal.clone().transformDirection(hit.object.matrixWorld);
+  helper.position.copy(hit.point); helper.lookAt(hit.point.clone().add(n)); helper.rotateZ(st.drot*Math.PI/180);
+  const sz = new THREE.Vector3(st.dsize, st.dsize, st.dsize*.9);
+  const mat = new THREE.MeshStandardMaterial({map:designTexture(), transparent:true, depthTest:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-4, roughness:.4, metalness:.1});
+  const geo = new THREE.DecalGeometry(hit.object, hit.point, helper.rotation.clone(), sz);
+  if (!geo.attributes.position || !geo.attributes.position.count){ toast('Ahí no se pudo pegar. Prueba en el tanque o los carenajes'); return; }
+  const d = new THREE.Mesh(geo, mat); d.userData.isDecal = true; d.userData.model = st.model; d.renderOrder = 2;
+  turn.updateMatrixWorld(true); d.applyMatrix4(new THREE.Matrix4().copy(turn.matrixWorld).invert()); turn.add(d); decals.push(d);
+  render(); toast('Diseño pegado');
+}
+
+/* ---- Eventos ---- */
+$('cats').addEventListener('click', e=>{ const b = e.target.closest('.cat'); if (!b) return; st.tab = b.dataset.k; if (st.tab!=='disenos') st.placing = false; if (st.tab==='disenos' || st.tab==='pintura'){ setSpin(false); turnTarget = 0; } render(); });
+$('moto-btn').onclick = ()=>{ st.tab = 'moto'; st.placing = false; render(); };
+$('opts').addEventListener('input', e=>{
+  const t = e.target;
+  if (t.id==='q'){ st.q = t.value; const pos = t.selectionStart; renderPanel(); const q = $('q'); q.focus(); try { q.setSelectionRange(pos,pos); } catch(_){} }
+  else if (t.id==='cpick'){ const z = st.zone; st.paint[z] = [t.value, (st.paint[z]||[0,'brillante'])[1]]; st.combo = null; applyAll(); const hx = t.parentNode.querySelector('.hex'); if (hx) hx.textContent = t.value.toUpperCase(); }
+  else if (t.id==='dsize'){ st.dsize = t.value/100; t.previousElementSibling.textContent = 'Tamaño · '+t.value+' cm'; }
+  else if (t.id==='drot'){ st.drot = +t.value; t.previousElementSibling.textContent = 'Giro · '+t.value+'°'; }
+  else if (t.id==='dnum'){ numTxt = t.value.toUpperCase(); }
+});
+$('opts').addEventListener('change', e=>{
+  const t = e.target;
+  if (t.id==='cpick') render();
+  if (t.id==='dimg'){ const f = t.files && t.files[0]; if (!f) return; const rd = new FileReader(); rd.onload = ()=>{ const im = new Image(); im.onload = ()=>{ userImg = im; st.design = 'propio'; st.placing = true; render(); toast('Listo. Toca la moto para pegar tu diseño'); }; im.onerror = ()=> toast('No pude abrir esa imagen'); im.src = rd.result; }; rd.readAsDataURL(f); }
+});
+$('opts').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if (!b) return;
+  const d = b.dataset;
+  if (d.brand){ st.brand = d.brand; renderPanel(); }
+  else if (d.type){ st.type = d.type; renderPanel(); }
+  else if (d.model){ if (eng){ engineOff(); setEngineUI(); } st.model = d.model; st.placing = false; st.zone = (zones()[0]||{}).k; render(); go(VIEWS.tq,'tq'); setSpin(!reduce); toast(activeObj() ? 'Moto lista en el taller' : 'Esta moto todavía no tiene modelo 3D'); }
+  else if (d.combo){ const c = COMBOS[d.combo]; st.combo = d.combo; Object.entries(c.z).forEach(([k,v])=> st.paint[k] = v.slice()); decalT.redraw(c.decal); render(); }
+  else if (d.zone){ st.zone = d.zone; renderPanel(); }
+  else if (d.hex){ st.paint[st.zone] = [d.hex, (st.paint[st.zone]||[0,'brillante'])[1]]; st.combo = null; render(); }
+  else if (d.fin){ const p = st.paint[st.zone] || [zones().find(z=>z.k===st.zone).hex,'brillante']; st.paint[st.zone] = [p[0], d.fin]; st.combo = null; render(); }
+  else if (b.id==='z-reset'){ const z = zones().find(z=> z.k===st.zone); st.paint[z.k] = [z.hex, z.fin]; render(); }
+  else if (d.design){ st.design = d.design; st.placing = true; render(); }
+  else if (b.id==='place'){ st.placing = !st.placing; if (st.placing){ setSpin(false); turnTarget = 0; } render(); }
+  else if (b.id==='d-undo'){ const i = decals.map(x=> x.userData.model).lastIndexOf(st.model); if (i>=0){ const x = decals.splice(i,1)[0]; turn.remove(x); x.geometry.dispose(); } render(); }
+  else if (b.id==='d-clear'){ for (let i=decals.length-1;i>=0;i--){ if (decals[i].userData.model===st.model){ turn.remove(decals[i]); decals[i].geometry.dispose(); decals.splice(i,1); } } render(); }
+  else if (d.part){ st.parts[d.part] = d.v; st.showOrig = false; render(); focusPart(d.part); }
+  else if (d.acc){ st.acc[d.acc] = !st.acc[d.acc]; st.showOrig = false; render(); }
+  else if (d.try){ tryBuild(d.try); }
+  else if (d.like){ toggleLike(d.like); }
+});
+let downAt = null;
+if (renderer){
+  renderer.domElement.addEventListener('pointerdown', e=>{ downAt = [e.clientX, e.clientY]; });
+  renderer.domElement.addEventListener('pointerup', e=>{ if (!st.placing || !downAt) return; if (Math.hypot(e.clientX-downAt[0], e.clientY-downAt[1]) < 6) placeAt(e); downAt = null; });
+}
+$('c-orig').onclick = ()=>{ st.showOrig = true; render(); };
+$('c-build').onclick = ()=>{ st.showOrig = false; render(); };
+$('reset').onclick = ()=>{ zones().forEach(z=> st.paint[z.k] = [z.hex, z.fin]); Object.keys(st.parts).forEach(k=> st.parts[k] = 'stock'); st.acc = {}; st.combo = 'bronce'; decalT.redraw(COMBOS.bronce.decal);
+  for (let i=decals.length-1;i>=0;i--){ if (decals[i].userData.model===st.model){ turn.remove(decals[i]); decals.splice(i,1); } } st.showOrig = false; render(); toast('La moto volvió a como sale de fábrica'); };
+$('save').onclick = ()=>{ try { localStorage.setItem('garaje-build-v2', JSON.stringify({model:st.model, paint:st.paint, parts:st.parts, acc:st.acc})); toast('Build guardado en este navegador'); } catch(e){ toast('Este navegador no deja guardar el build'); } };
+try { const sv = JSON.parse(localStorage.getItem('garaje-build-v2')||'null'); if (sv && MODELS.some(m=> m.id===sv.model)){ st.model = sv.model; Object.assign(st.paint, sv.paint||{}); Object.assign(st.parts, sv.parts||{}); st.acc = sv.acc||{}; } } catch(e){}
+
+// Luces del garaje
+function setNight(n){
+  night = n; $('l-dia').setAttribute('aria-pressed', !n); $('l-noche').setAttribute('aria-pressed', n);
+  lights.spots.forEach((s,i)=> s.intensity = n ? (i?0:.3) : (i?.6:.9));
+  lights.lamps.forEach(p=> p.intensity = n ? .06 : .35);
+  lights.hemi.intensity = n ? .1 : .85; lights.rimL.intensity = n ? .05 : .9;
+  lights.neon.intensity = n ? 1.4 : .5; lights.ring.intensity = n ? .8 : .25;
+  if (envTex) applyEnv(n ? .15 : .35);
+  ledM.color.setHex(n ? 0x23262c : 0xffffff); winM.color.setHex(n ? 0x18223a : 0xe3ecf6);
+  scene.background.setHex(n ? 0x0b0c0f : 0xd9dbde);
+  glows.forEach(g=>{ g.material.opacity = n ? .95 : g.userData.day; const s = g.userData.base*(n?1.6:1); g.scale.set(s,s,1); });
+  M.lens.emissiveIntensity = n ? 3 : 1.2; M.lensStock.emissiveIntensity = n ? 2.2 : .05; M.tail.emissiveIntensity = n ? 2.4 : 1.1; M.amber.emissiveIntensity = n ? 1.6 : .15;
+  applyAll();
+}
+$('l-dia').onclick = ()=> setNight(false);
+$('l-noche').onclick = ()=> setNight(true);
+
+// Cámara
+const VIEWS = { taller:{p:V(2.6,2.4,5.2), t:V(-.4,1.6,-1.5)}, tq:{p:V(1.9,1.25,3.8), t:V(0,.85,0)}, lado:{p:V(0,1.1,4.3), t:V(0,.8,0)}, frente:{p:V(3.6,1.3,1.4), t:V(0,.9,-.4)}, atras:{p:V(-2.6,1.5,2.9), t:V(0,1.0,0)} };
+let tween = null, spinning = !reduce, turnTarget = null;
+function setSpin(on){ spinning = on; $('spin').setAttribute('aria-pressed', on); }
+function markView(v){ document.querySelectorAll('.views [data-v]').forEach(b=> b.setAttribute('aria-pressed', b.dataset.v===v)); }
+function go(v, name){ setSpin(false); turnTarget = 0; markView(name||''); if (!controls) return; if (reduce){ camera.position.copy(v.p); controls.target.copy(v.t); } else tween = {p:v.p.clone(), t:v.t.clone()}; }
+document.querySelectorAll('.views [data-v]').forEach(b=> b.onclick = ()=> go(VIEWS[b.dataset.v], b.dataset.v));
+$('spin').onclick = ()=> setSpin(!spinning);
+function focusPart(k){
+  if (!isHand()) return; const pin = PINS.find(p=> p.k===k); if (!pin) return;
+  const t = pin.cam.t.clone().add(V(0,.07,0)), p = pin.cam.p.clone().sub(pin.cam.t).multiplyScalar(1.35).add(t);
+  go({p, t}, '');
+}
+if (controls) controls.addEventListener('start', ()=>{ tween = null; markView(''); });
+$('nm-test').onclick = ()=>{ st.model = GIX; st.tab = 'pintura'; render(); go(VIEWS.tq,'tq'); };
+
+// Cargar una moto propia (.glb / .gltf) para el modelo escogido
+$('glb').addEventListener('change', e=>{
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = ()=>{
+    try {
+      new THREE.GLTFLoader().parse(rd.result, '', gltf=>{
+        if (loaded[st.model]) turn.remove(loaded[st.model]);
+        const m = gltf.scene; const mats = new Map();
+        m.traverse(o=>{ if (o.isMesh){ o.castShadow = true; o.receiveShadow = true;
+          const fix = (mt)=>{ if (!mats.has(mt)) mats.set(mt, mt.clone()); return mats.get(mt); };
+          o.material = Array.isArray(o.material) ? o.material.map(fix) : fix(o.material); } });
+        const box = new THREE.Box3().setFromObject(m), size = new THREE.Vector3(), c = new THREE.Vector3(); box.getSize(size); box.getCenter(c);
+        const long = Math.max(size.x, size.z) || 1, k = 2.05/long;
+        m.scale.setScalar(k); m.position.set(-c.x*k, -box.min.y*k + .07, -c.z*k);
+        loaded[st.model] = m; turn.add(m);
+        const Z = zoneMap[st.model] = [...mats.values()].filter(mt=> mt.color).slice(0,16).map((mt,i)=> ({k:st.model+':g'+i, n: mt.name ? mt.name.replace(/[_.]/g,' ') : 'Material '+(i+1), mats:[mt], hex:'#'+mt.color.getHexString(), fin: mt.roughness!==undefined && mt.roughness>.6 ? 'mate' : 'brillante'}));
+        Z.forEach(z=> st.paint[z.k] = [z.hex, z.fin]); st.zone = (Z[0]||{}).k;
+        render(); go(VIEWS.tq, 'tq'); setSpin(!reduce); toast('Moto cargada en el taller');
+      }, err=> toast('No pude abrir ese archivo. Prueba con un .glb'));
+    } catch(err){ toast('No pude abrir ese archivo. Prueba con un .glb'); }
+  };
+  rd.readAsArrayBuffer(f); e.target.value = '';
+});
+
+/* =============== EXTRAS: revisión, motor, foto, El parche =============== */
+// ---- Revisión técnico-mecánica (guía orientativa) ----
+function revItems(){
+  if (!activeObj()) return [];
+  if (!isHand()) return [{n:'Escaneo cargado', s:'warn', d:'La revisión se calcula con las piezas. Cuando separemos tu escaneo por partes, aparece aquí.'}];
+  const P = st.parts, A = st.acc, out = [];
+  out.push(P.exhosto==='biker' ? {n:'Ruido del exhosto', s:'warn', d:'El slip-on pasa solo con el db-killer puesto. Llévalo instalado el día de la revisión.'} : {n:'Ruido del exhosto', s:'ok', d:'Silenciador de fábrica.'});
+  out.push(P.faro==='biker' ? {n:'Farola', s:'ok', d:'LED con luz alta y baja. Que esté bien alineada para no encandilar.'} : {n:'Farola', s:'ok', d:'Farola de fábrica.'});
+  out.push(A.exploradoras ? {n:'Exploradoras', s:'warn', d:'Deben ser blancas o ámbar y no encandilar. Muchos CDA las revisan con lupa.'} : {n:'Luces auxiliares', s:'ok', d:'Sin luces extra.'});
+  out.push(P.cola==='biker' ? {n:'Placa', s:'ok', d:'Cola corta con la placa visible y con luz.'} : {n:'Placa', s:'ok', d:'Porta placa de fábrica.'});
+  out.push(P.manubrio==='biker' ? {n:'Espejos', s:'ok', d:'Los de punta sirven si dejan ver hacia atrás por los dos lados.'} : {n:'Espejos', s:'ok', d:'Espejos a los dos lados.'});
+  out.push(P.llantas==='biker' ? {n:'Llantas', s:'ok', d:'Semitaco en la misma medida de fábrica.'} : {n:'Llantas', s:'ok', d:'Medida de fábrica.'});
+  return out;
+}
+function revSummary(){ const it = revItems(); if (!it.length) return null; const w = it.filter(i=> i.s==='warn').length; return {w, txt: w ? (w===1 ? '1 cosa por revisar' : w+' cosas por revisar') : 'Pasa la revisión'}; }
+
+// ---- Prender la moto: sonido sintetizado ----
+let ac = null, eng = null, rpm = 0, throttle = false;
+function engineOn(){
+  if (!activeObj()){ toast('Primero carga la moto'); return false; }
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ toast('Este navegador no deja reproducir sonido'); return false; }
+  if (ac.state === 'suspended') ac.resume();
+  const loud = isHand() && st.parts.exhosto==='biker';
+  const o1 = ac.createOscillator(), o2 = ac.createOscillator(), g2 = ac.createGain();
+  o1.type = 'sawtooth'; o2.type = 'square'; g2.gain.value = .35;
+  const ws = ac.createWaveShaper(), k = loud ? 38 : 10, n = 1024, cv = new Float32Array(n);
+  for (let i=0;i<n;i++){ const x = i/(n-1)*2-1; cv[i] = (1+k)*x/(1+k*Math.abs(x)); } ws.curve = cv;
+  const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = loud ? 6 : 3;
+  const out = ac.createGain(); out.gain.value = 0;
+  const nb = ac.createBuffer(1, ac.sampleRate, ac.sampleRate), nd = nb.getChannelData(0); for (let i=0;i<nd.length;i++) nd[i] = Math.random()*2-1;
+  const ns = ac.createBufferSource(); ns.buffer = nb; ns.loop = true; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = loud ? 1500 : 900; const ng = ac.createGain(); ng.gain.value = loud ? .06 : .03;
+  o1.connect(ws); o2.connect(g2); g2.connect(ws); ws.connect(lp); lp.connect(out); ns.connect(bp); bp.connect(ng); ng.connect(out); out.connect(ac.destination);
+  const t = ac.currentTime; o1.frequency.setValueAtTime(3, t); o1.frequency.linearRampToValueAtTime(9, t+.7); o2.frequency.setValueAtTime(6, t); o2.frequency.linearRampToValueAtTime(18, t+.7);
+  out.gain.setValueAtTime(0, t); out.gain.linearRampToValueAtTime(loud ? .32 : .22, t+.5);
+  [o1,o2,ns].forEach(x=> x.start());
+  eng = {o1, o2, lp, out, ns, loud, base: loud ? .32 : .22}; rpm = 1100;
+  return true;
+}
+function engineOff(){ if (!eng) return; const e = eng, t = ac.currentTime; e.out.gain.cancelScheduledValues(t); e.out.gain.setValueAtTime(e.out.gain.value, t); e.out.gain.linearRampToValueAtTime(0, t+.35); setTimeout(()=>{ try { e.o1.stop(); e.o2.stop(); e.ns.stop(); } catch(_){} }, 450); eng = null; rpm = 0; throttle = false; }
+function engineTick(dt){
+  if (!eng) return;
+  const target = throttle ? 9000 : 1150; rpm += (target - rpm) * Math.min(1, dt*(throttle ? 2.6 : 1.6));
+  const t = ac.currentTime, f = rpm/120;
+  eng.o1.frequency.setTargetAtTime(f, t, .03); eng.o2.frequency.setTargetAtTime(f*2, t, .03);
+  eng.lp.frequency.setTargetAtTime((eng.loud ? 700 : 420) + rpm*(eng.loud ? .32 : .16), t, .05);
+  eng.out.gain.setTargetAtTime(eng.base*(.75 + .35*(rpm/9000)), t, .08);
+  const obj = activeObj(); if (obj){ const a = .0012*(.5 + rpm/4000); obj.rotation.x = (Math.random()-.5)*a; obj.rotation.z = (Math.random()-.5)*a*.6; }
+  $('rpm').textContent = Math.round(rpm/50)*50 + ' rpm';
+  $('rpmbar').style.width = Math.min(100, rpm/90) + '%';
+}
+function setEngineUI(){ const on = !!eng; $('eng-on').setAttribute('aria-pressed', on); $('eng-on').textContent = on ? 'Apagar' : 'Prender moto'; $('eng-gas').disabled = !on; $('tach').hidden = !on; if (!on){ const o = activeObj(); if (o){ o.rotation.x = 0; o.rotation.z = 0; } } }
+$('eng-on').onclick = ()=>{ if (eng) engineOff(); else engineOn(); setEngineUI(); };
+const gasDown = (e)=>{ if (!eng) return; e.preventDefault(); throttle = true; $('eng-gas').setAttribute('aria-pressed','true'); };
+const gasUp = ()=>{ throttle = false; $('eng-gas').setAttribute('aria-pressed','false'); };
+$('eng-gas').addEventListener('pointerdown', gasDown); ['pointerup','pointerleave','pointercancel'].forEach(ev=> $('eng-gas').addEventListener(ev, gasUp));
+$('eng-gas').addEventListener('keydown', e=>{ if (e.key===' ' || e.key==='Enter'){ gasDown(e); } });
+$('eng-gas').addEventListener('keyup', e=>{ if (e.key===' ' || e.key==='Enter') gasUp(); });
+
+// ---- Compartir: foto del build y El parche ----
+let downloads = null, db = null, user = null, me = null, builds = [], likes = {}, communityReady = false;
+function buildFields(){
+  const paint = {}; if (isHand()) HAND_ZONES.forEach(z=> paint[z.k] = st.paint[z.k]);
+  return {model: st.model, paint, parts: Object.assign({}, st.parts), acc: Object.assign({}, st.acc), designs: decals.filter(d=> d.userData.model===st.model).length};
+}
+function shareOpen(){ if (!activeObj()){ toast('Primero carga la moto'); return; } $('share').hidden = false; $('bname').focus(); drawPhoto(); }
+$('share-btn').onclick = shareOpen;
+$('share-close').onclick = ()=>{ $('share').hidden = true; };
+$('share').addEventListener('keydown', e=>{ if (e.key==='Escape') $('share').hidden = true; });
+$('bname').addEventListener('input', ()=> drawPhoto());
+function drawPhoto(){
+  if (!renderer) return;
+  renderFrame();
+  const src = renderer.domElement, W = 1080, H = 1350, c = $('photo'); c.width = W; c.height = H; const g = c.getContext('2d');
+  g.fillStyle = '#0b0c0f'; g.fillRect(0,0,W,H);
+  const ih = 1000, r = Math.max(W/src.width, ih/src.height), sw = W/r, sh = ih/r;
+  g.drawImage(src, (src.width-sw)/2, (src.height-sh)/2, sw, sh, 0, 0, W, ih);
+  const tg = g.createLinearGradient(0,0,0,170); tg.addColorStop(0,'rgba(11,12,15,.92)'); tg.addColorStop(1,'rgba(11,12,15,0)'); g.fillStyle = tg; g.fillRect(0,0,W,170);
+  const grd = g.createLinearGradient(0, ih-260, 0, ih); grd.addColorStop(0,'rgba(11,12,15,0)'); grd.addColorStop(1,'rgba(11,12,15,1)'); g.fillStyle = grd; g.fillRect(0, ih-260, W, 260);
+  const m = curModel(), name = ($('bname').value || 'Mi build').slice(0,28);
+  g.fillStyle = '#FF5B1F'; g.save(); g.translate(64, 70); g.transform(1,0,-.32,1,0,0); g.fillRect(0,0,18,18); g.restore();
+  g.fillStyle = '#F3F1EC'; g.font = '800 italic 54px "Saira Extra Condensed", "Arial Narrow", Impact, sans-serif'; g.textBaseline = 'top'; g.fillText('GARAJE', 100, 52);
+  g.font = '600 26px "Barlow", system-ui, sans-serif'; g.fillStyle = '#B4B9C2'; g.fillText(m.brand.toUpperCase()+' · '+m.model.toUpperCase(), 64, ih-170);
+  g.fillStyle = '#F3F1EC'; g.font = '800 italic 110px "Saira Extra Condensed", "Arial Narrow", Impact, sans-serif'; g.fillText(name.toUpperCase(), 60, ih-136, W-120);
+  let x = 64, y = ih+40; g.font = '600 26px "Barlow", system-ui, sans-serif';
+  const ch = changes(); (ch.length ? ch : ['De fábrica']).slice(0,8).forEach(t=>{ const w = g.measureText(t).width + 36; if (x + w > W-64){ x = 64; y += 62; } g.fillStyle = 'rgba(255,255,255,.08)'; g.fillRect(x, y, w, 48); g.strokeStyle = 'rgba(255,255,255,.22)'; g.lineWidth = 2; g.strokeRect(x+1, y+1, w-2, 46); g.fillStyle = '#F3F1EC'; g.fillText(t, x+18, y+10); x += w + 12; });
+  const rv = revSummary(); if (rv){ g.font = '600 24px "Barlow", system-ui, sans-serif'; g.fillStyle = rv.w ? '#F2C230' : '#3FD08A'; g.fillText((rv.w ? '● ' : '● ')+'Tecnomecánica: '+rv.txt, 64, H-78); }
+  g.fillStyle = '#B4B9C2'; g.font = '500 24px "JetBrains Mono", monospace'; g.textAlign = 'right'; g.fillText('[TU-DOMINIO]', W-64, H-78); g.textAlign = 'left';
+}
+$('dl').onclick = async ()=>{
+  drawPhoto();
+  const blob = await new Promise(res=> $('photo').toBlob(res, 'image/png'));
+  if (!downloads || !blob){ toast('Aquí no se puede descargar. Mantén presionada la imagen para guardarla'); return; }
+  const fname = 'garaje-' + (slug($('bname').value || 'mi-build') || 'mi-build') + '.png';
+  try { await downloads.save({filename: fname, data: blob}); toast('Foto guardada'); }
+  catch(e){ if (e && e.code==='declined') return; toast('No se pudo guardar la foto'); }
+};
+$('pub').onclick = async ()=>{
+  if (!db || !me){ toast('Para publicar en El parche tienes que entrar con tu cuenta'); return; }
+  const name = ($('bname').value || '').trim().slice(0,40);
+  if (!name){ toast('Ponle un nombre a tu build'); $('bname').focus(); return; }
+  try { await db.collection('builds').doc(me).set(Object.assign({by: me, name, updatedAt: new Date().toISOString()}, buildFields())); toast('Publicado en El parche'); $('share').hidden = true; st.tab = 'parche'; render(); }
+  catch(e){ toast('No se pudo publicar. Intenta de nuevo en un rato'); }
+};
+const HEX = /^#[0-9a-f]{6}$/i;
+function likeCount(id){ return Object.values(likes).filter(m=> m && m[id]).length; }
+function parcheHTML(){
+  if (!communityReady) return `<div class="empty"><b>El parche no está disponible aquí</b><span>La galería de builds funciona cuando abres la página con tu cuenta de Claude.</span></div>`;
+  if (!builds.length) return `<div class="empty"><b>Todavía nadie ha publicado su build</b><span>Arma el tuyo, dale Compartir y publícalo. Aparece aquí para que el parche lo vea y le dé like.</span></div>`;
+  const mine = me ? (likes[me]||{}) : {};
+  const sorted = builds.slice().sort((a,b)=> likeCount(b.id) - likeCount(a.id));
+  return `<div class="olist">${sorted.map((b,i)=>{
+    const mod = MODELS.find(m=> m.id===b.model); const dots = Object.values(b.paint||{}).filter(p=> Array.isArray(p) && HEX.test(p[0])).slice(0,5).map(p=> `<span class="dot" style="background:${p[0]}"></span>`).join('');
+    const nParts = Object.values(b.parts||{}).filter(v=> v==='biker').length, nAcc = Object.values(b.acc||{}).filter(Boolean).length;
+    return `<div class="bcard">${i===0 && likeCount(b.id) ? '<span class="crown">Build de la semana</span>' : ''}
+      <div class="row"><span class="on">${esc(String(b.name||'Sin nombre').slice(0,40))}</span><span class="dots">${dots}</span></div>
+      <span class="od">${mod ? esc(mod.brand+' '+mod.model) : 'Moto'} · por <span class="who" data-uid="${esc(b.by||'')}">alguien del parche</span></span>
+      <span class="tags"><span class="tag">${nParts} piezas</span><span class="tag">${nAcc} accesorios</span>${b.designs?`<span class="tag">${+b.designs||0} diseños</span>`:''}</span>
+      <span class="row2"><button class="btn" data-try="${esc(b.id)}">Probar este build</button><button class="btn" data-like="${esc(b.id)}" aria-pressed="${!!mine[b.id]}">${mine[b.id] ? 'Te gusta' : 'Me gusta'} · ${likeCount(b.id)}</button></span></div>`; }).join('')}</div>`;
+}
+async function fillNames(){
+  if (!user) return; const els = [...document.querySelectorAll('.who[data-uid]')]; const ids = [...new Set(els.map(e=> e.dataset.uid).filter(Boolean))]; if (!ids.length) return;
+  const ps = await user.profiles(ids); els.forEach(e=>{ const p = ps[e.dataset.uid]; if (p) e.textContent = p.isMe ? 'ti' : (p.name || 'alguien del parche'); });
+}
+function tryBuild(id){
+  const b = builds.find(x=> x.id===id); if (!b || !MODELS.some(m=> m.id===b.model)) return;
+  st.model = b.model;
+  Object.entries(b.paint||{}).forEach(([k,p])=>{ if (HAND_ZONES.some(z=> z.k===k) && Array.isArray(p) && HEX.test(p[0]) && FIN[p[1]]) st.paint[k] = [p[0], p[1]]; });
+  Object.keys(st.parts).forEach(k=>{ const v = (b.parts||{})[k]; st.parts[k] = v==='biker' ? 'biker' : 'stock'; });
+  st.acc = {}; ACCS.forEach(a=>{ if ((b.acc||{})[a.k]) st.acc[a.k] = true; });
+  st.combo = null; st.showOrig = false; st.tab = 'pintura'; render(); go(VIEWS.tq,'tq'); setSpin(!reduce); toast('Probando: '+String(b.name||'build').slice(0,40));
+}
+async function toggleLike(id){
+  if (!db || !me){ toast('Entra con tu cuenta para dar like'); return; }
+  const cur = Object.assign({}, likes[me]||{}); if (cur[id]) delete cur[id]; else cur[id] = true;
+  try { await db.collection('likes').doc(me).set({liked: cur}); } catch(e){ toast('No se pudo guardar el like'); }
+}
+(async ()=>{
+  if (!window.claude || !window.claude.use) return;
+  [downloads, db, user] = await Promise.all(['downloads','db','user'].map(n=> window.claude.use(n).catch(()=> null)));
+  if (!downloads) $('dl').hidden = true;
+  if (!db){ $('pub').hidden = true; return; }
+  me = user ? await user.id() : null;
+  if (!me) $('pub').hidden = true;
+  communityReady = true;
+  db.collection('builds').orderBy('updatedAt','desc').limit(100).onSnapshot(s=>{ builds = s.docs.map(d=> Object.assign({}, d.data()||{}, {id: d.id})); if (st.tab==='parche') render(); });
+  db.collection('likes').onSnapshot(s=>{ likes = {}; s.docs.forEach(d=>{ const v = (d.data()||{}).liked; likes[d.id] = (v && typeof v==='object') ? v : {}; }); if (st.tab==='parche') render(); });
+  if (st.tab==='parche') render();
+})();
+
+/* =============== REALISMO: reflejos reales, oclusión, brillo de luces =============== */
+// Sombra de contacto suave bajo la moto (la ancla al piso)
+(function(){
+  const c = document.createElement('canvas'); c.width = 256; c.height = 128; const g = c.getContext('2d');
+  const gr = g.createRadialGradient(128,64,4,128,64,124); gr.addColorStop(0,'rgba(0,0,0,.62)'); gr.addColorStop(.55,'rgba(0,0,0,.28)'); gr.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0,0,256,128);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(2.5,1.0), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c), transparent:true, depthWrite:false}));
+  m.rotation.x = -Math.PI/2; m.position.y = .073; m.renderOrder = 1; turn.add(m);
+})();
+
+// Mapa de entorno HDR de un taller real (Poly Haven, CC0): reflejos de verdad en pintura, cromo y vidrio
+let envTex = null;
+function applyEnv(intensity){
+  turn.traverse(o=>{ if (!o.isMesh || o.userData.isDecal) return; [].concat(o.material).forEach(m=>{ if (m && m.isMeshStandardMaterial){ m.envMap = envTex; m.envMapIntensity = intensity; m.needsUpdate = true; } }); });
+}
+if (renderer && THREE.EXRLoader && window.fflate){
+  try {
+    const bin = atob(WORKSHOP_EXR), buf = new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) buf[i] = bin.charCodeAt(i);
+    const d = new THREE.EXRLoader().setDataType(THREE.HalfFloatType).parse(buf.buffer);
+    const tex = new THREE.DataTexture(d.data, d.width, d.height, d.format, d.type);
+    tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter; tex.generateMipmaps = false;
+    if (d.flipY !== undefined) tex.flipY = d.flipY; if (d.encoding !== undefined) tex.encoding = d.encoding; tex.needsUpdate = true;
+    const pm = new THREE.PMREMGenerator(renderer); pm.compileEquirectangularShader();
+    envTex = pm.fromEquirectangular(tex).texture; tex.dispose(); pm.dispose();
+    applyEnv(night ? .15 : .35);
+  } catch(e){}
+}
+
+// Postproceso: oclusión ambiental (sombras en rincones y entre piezas), brillo en luces y antialias
+let composer = null, saoPass = null, bloomPass = null, quality = 'alta';
+const FinalShader = {
+  uniforms:{tDiffuse:{value:null}, exposure:{value:1.0}},
+  vertexShader:'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.); }',
+  fragmentShader:`uniform sampler2D tDiffuse; uniform float exposure; varying vec2 vUv;
+    vec3 fit(vec3 v){ vec3 a = v*(v+0.0245786)-0.000090537; vec3 b = v*(0.983729*v+0.4329510)+0.238081; return a/b; }
+    vec3 aces(vec3 c){ const mat3 I = mat3(vec3(0.59719,0.07600,0.02840),vec3(0.35458,0.90834,0.13383),vec3(0.04823,0.01566,0.83777));
+      const mat3 O = mat3(vec3(1.60475,-0.10208,-0.00327),vec3(-0.53108,1.10813,-0.07276),vec3(-0.07367,-0.00605,1.07602));
+      c *= exposure/0.6; c = I*c; c = fit(c); c = O*c; return clamp(c,0.,1.); }
+    vec3 srgb(vec3 c){ return mix(c*12.92, 1.055*pow(c, vec3(1./2.4))-0.055, step(0.0031308, c)); }
+    void main(){ vec4 t = texture2D(tDiffuse, vUv); vec2 d = vUv-.5; float vig = 1. - dot(d,d)*.35; gl_FragColor = vec4(srgb(aces(t.rgb))*vig, 1.); }`
+};
+function buildComposer(){
+  if (!renderer || !THREE.EffectComposer || !THREE.SAOPass || !THREE.UnrealBloomPass) return null;
+  try {
+    const w = stage.clientWidth || 800, h = stage.clientHeight || 600, pr = renderer.getPixelRatio();
+    const rt = new THREE.WebGLRenderTarget(w*pr, h*pr, {type: THREE.HalfFloatType, minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, format: THREE.RGBAFormat});
+    const c = new THREE.EffectComposer(renderer, rt);
+    c.addPass(new THREE.RenderPass(scene, camera));
+    saoPass = new THREE.SAOPass(scene, camera, false, true);
+    Object.assign(saoPass.params, {saoBias:.5, saoIntensity:.02, saoScale:2.2, saoKernelRadius:28, saoMinResolution:0, saoBlur:true, saoBlurRadius:6, saoBlurStdDev:3, saoBlurDepthCutoff:.01});
+    const ro = saoPass.renderOverride.bind(saoPass);
+    saoPass.renderOverride = function(){ const hidden = []; scene.traverse(o=>{ if (o.isReflector || (o.material && o.material.isShadowMaterial) || o.isSprite){ if (o.visible){ hidden.push(o); o.visible = false; } } }); ro.apply(null, arguments); hidden.forEach(o=> o.visible = true); };
+    c.addPass(saoPass);
+    bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(w, h), .4, .45, 1.15); c.addPass(bloomPass);
+    c.addPass(new THREE.ShaderPass(FinalShader));
+    if (THREE.SMAAPass){ c.addPass(new THREE.SMAAPass(w*pr, h*pr)); }
+    return c;
+  } catch(e){ console.error('composer', e && e.message); return null; }
+}
+function setQuality(q){
+  quality = q; $('q-alta').setAttribute('aria-pressed', q==='alta'); $('q-rapida').setAttribute('aria-pressed', q==='rapida');
+  if (q==='alta' && !composer){ composer = buildComposer(); if (!composer){ quality = 'rapida'; $('q-alta').setAttribute('aria-pressed','false'); $('q-rapida').setAttribute('aria-pressed','true'); toast('Este equipo no soporta la calidad realista'); } else resizeComposer(); }
+  syncToneMapping();
+}
+function syncToneMapping(){
+  if (!renderer) return;
+  const want = (quality==='alta' && composer) ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
+  if (renderer.toneMapping === want) return;
+  renderer.toneMapping = want;
+  scene.traverse(o=>{ [].concat(o.material||[]).forEach(m=>{ if (m) m.needsUpdate = true; }); });
+}
+function resizeComposer(){ if (!composer) return; const w = stage.clientWidth, h = stage.clientHeight; if (!w || !h) return; composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(w, h); }
+function renderFrame(){ if (quality==='alta' && composer) composer.render(); else renderer.render(scene, camera); }
+$('q-alta').onclick = ()=> setQuality('alta');
+$('q-rapida').onclick = ()=> setQuality('rapida');
+
+function resize(){
+  const w = stage.clientWidth, h = stage.clientHeight; if (!renderer || !w || !h) return;
+  renderer.setSize(w,h,false); camera.aspect = w/h; camera.fov = w < 700 ? 54 : 44; camera.updateProjectionMatrix();
+  resizeComposer();
+}
+new ResizeObserver(resize).observe(stage); resize();
+camera.position.copy(VIEWS.tq.p); if (controls) controls.target.copy(VIEWS.tq.t);
+markView('tq'); setSpin(!reduce);
+st.zone = 'tanque'; render(); setNight(false); setQuality(window.innerWidth < 900 ? 'rapida' : 'alta');
+if (document.fonts && document.fonts.load){ Promise.all(['800 italic 100px "Saira Extra Condensed"','700 50px "Barlow"'].map(f=> document.fonts.load(f))).then(()=>{ SIGNS.forEach(([t,d])=>{ const c = t.image, g = c.getContext('2d'); g.clearRect(0,0,c.width,c.height); d(g,c.width,c.height); t.needsUpdate = true; }); }).catch(()=>{}); }
+
+const clock = new THREE.Clock();
+function loop(){
+  requestAnimationFrame(loop);
+  if (!renderer) return;
+  const dt = Math.min(clock.getDelta(), .05);
+  if (spinning) turn.rotation.y += dt*.22;
+  else if (turnTarget !== null){ const a = ((turn.rotation.y % (Math.PI*2)) + Math.PI*3) % (Math.PI*2) - Math.PI; turn.rotation.y = a*(1-Math.min(1,dt*5)); if (Math.abs(turn.rotation.y) < .002){ turn.rotation.y = 0; turnTarget = null; } }
+  engineTick(dt);
+  if (tween){ camera.position.lerp(tween.p,.08); controls.target.lerp(tween.t,.08); if (camera.position.distanceTo(tween.p) < .004) tween = null; }
+  controls.update();
+  renderFrame();
+}
+loop();
+window.__g = {scene, camera, controls, renderer, go, VIEWS, setNight, st, render, placeAt, bike, M, PIEZAS};
+})();
+</script>

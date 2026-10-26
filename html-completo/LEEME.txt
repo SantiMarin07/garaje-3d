@@ -1,0 +1,16 @@
+GARAJE 3D - paquete completo
+
+index.html           -> el aplicativo completo (un solo archivo). Ábrelo con doble clic en Chrome.
+                        Necesita internet para cargar Three.js desde la CDN (cdn.jsdelivr.net y cdnjs).
+                        El ambiente HDRI del taller ya va incrustado dentro del archivo.
+Gixxer150_piezas.glb -> la moto por piezas, para Blender.
+fuentes/             -> código fuente por partes:
+   garaje3d-src.html  plantilla principal (marca /*__BIKE__*/ y __EXR__)
+   bike_segment.js    la moto (se inserta en /*__BIKE__*/)
+   taller_section.js, ui_section.js, extras.js, realism.js   taller, interfaz, extras y realismo
+   vitrina.html       página de presentación (necesita sus videos/imágenes aparte)
+
+Si el navegador bloquea algo al abrirlo con doble clic, corre un servidor local en esta carpeta:
+   python -m http.server 8000
+y abre http://localhost:8000
+El HDRI (workshop.exr) es CC0 de Poly Haven.

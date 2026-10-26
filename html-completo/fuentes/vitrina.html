@@ -1,0 +1,239 @@
+<title>Santiago · smdevc</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: portada de video a pantalla casi completa (la moto gira a la derecha, el titular a la izquierda); luego un configurador con fotos reales del modelo, y cierre con WhatsApp */
+:root{
+  --bg:#0b0c0e; --bg2:#121418; --fg:#f4f1ea; --muted:#a2a6af; --line:#262a31; --accent:#ff5a1f; --on-accent:#120d0a; --veil:rgba(11,12,14,.0);
+  --display:'Barlow Condensed','Arial Narrow',Arial,sans-serif; --body:'Barlow','Helvetica Neue',Arial,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){--bg:#f4f2ee;--bg2:#ffffff;--fg:#15171a;--muted:#5a5e66;--line:#d8d5cf;--accent:#e4470f;--on-accent:#ffffff;color-scheme:light}}
+:root[data-theme="light"]{--bg:#f4f2ee;--bg2:#ffffff;--fg:#15171a;--muted:#5a5e66;--line:#d8d5cf;--accent:#e4470f;--on-accent:#ffffff;color-scheme:light}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:17px;line-height:1.55;margin:0;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+.wrap{max-width:1180px;margin:0 auto}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* Portada */
+.hero{position:relative;margin-left:calc(-1 * max(16px,env(safe-area-inset-left,0px)));margin-right:calc(-1 * max(16px,env(safe-area-inset-right,0px)));min-height:min(92vh,760px);display:flex;align-items:flex-end;overflow:hidden;background:#000}
+.hero video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:62% 50%}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,7,9,.92) 0%,rgba(6,7,9,.72) 34%,rgba(6,7,9,.05) 66%),linear-gradient(0deg,rgba(6,7,9,.85),rgba(6,7,9,0) 38%)}
+.nav{position:absolute;z-index:3;left:0;right:0;top:0;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px max(16px,env(safe-area-inset-right,0px)) 0 max(16px,env(safe-area-inset-left,0px));color:#f4f1ea}
+.mark{font-family:var(--display);font-weight:800;letter-spacing:.2em;font-size:22px;display:flex;align-items:center;gap:10px;text-decoration:none}
+.mark i{width:14px;height:14px;background:var(--accent);display:block;transform:skewX(-14deg)}
+.nav .links{display:flex;gap:26px;align-items:center;font-size:15px}
+.nav .links a{text-decoration:none;opacity:.85}
+.nav .links a:hover{opacity:1}
+.pill{background:var(--accent);color:var(--on-accent)!important;opacity:1!important;font-weight:600;padding:9px 18px;border-radius:999px}
+.hero .in{position:relative;z-index:2;width:100%;max-width:1180px;margin:0 auto;padding:120px max(16px,env(safe-area-inset-left,0px)) 56px;color:#f4f1ea}
+.kicker{font-family:var(--display);font-weight:700;letter-spacing:.24em;text-transform:uppercase;font-size:15px;color:var(--accent);margin:0 0 16px}
+h1{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(54px,10.5vw,138px);line-height:.88;margin:0 0 24px;max-width:9.5em;text-wrap:balance;letter-spacing:-.005em}
+h1 em{font-style:normal;color:var(--accent)}
+.lead{font-size:clamp(17px,2vw,21px);max-width:40ch;margin:0 0 30px;color:#d6d3cc}
+.btns{display:flex;flex-wrap:wrap;gap:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:18px;padding:16px 30px;border-radius:999px;text-decoration:none;border:0;cursor:pointer;font-family:var(--body);transition:transform .15s,filter .15s}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.hero .btn.ghost{color:#f4f1ea;border-color:rgba(244,241,234,.4)}
+.spec{position:absolute;z-index:2;right:max(16px,env(safe-area-inset-right,0px));bottom:22px;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:#cfcac0;text-align:right;line-height:1.7;font-variant-numeric:tabular-nums}
+.spec b{color:var(--accent);font-weight:600}
+
+/* Franja de tecnología */
+.tech{display:flex;flex-wrap:wrap;gap:10px 34px;padding-block:26px;border-bottom:1px solid var(--line);font-family:var(--display);font-weight:500;font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* Secciones */
+section{padding-block:clamp(56px,9vw,112px)}
+.eyebrow{font-family:var(--display);font-weight:700;letter-spacing:.24em;text-transform:uppercase;font-size:14px;color:var(--accent);margin:0 0 14px}
+h2{font-family:var(--display);font-weight:800;text-transform:uppercase;font-size:clamp(38px,6.5vw,78px);line-height:.92;margin:0 0 22px;text-wrap:balance;max-width:14em}
+.sub{color:var(--muted);font-size:19px;max-width:52ch;margin:0 0 40px}
+.cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line)}
+.col{padding:28px 28px 8px 0;border-right:1px solid var(--line);margin-right:28px}
+.col:last-child{border-right:0;margin-right:0}
+.col h3{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;text-transform:uppercase;margin:0 0 12px}
+.col p{color:var(--muted);margin:0 0 20px}
+
+/* Configurador */
+.cfg{background:var(--bg2);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.cfg .stage{position:relative;aspect-ratio:16/9;background:#0e1013}
+.cfg .stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:opacity .25s}
+.cfg .tag{position:absolute;left:16px;bottom:14px;background:rgba(8,9,11,.72);color:#f4f1ea;font-size:13px;letter-spacing:.12em;text-transform:uppercase;padding:7px 12px;border-radius:4px}
+.bar{display:flex;flex-wrap:wrap;gap:18px 36px;align-items:center;justify-content:space-between;padding:18px 20px;border-top:1px solid var(--line)}
+.group{display:flex;flex-direction:column;gap:8px}
+.group>span{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.sw{display:flex;gap:12px}
+.sw button{width:38px;height:38px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0;background:var(--c)}
+.sw button[aria-pressed="true"]{outline:3px solid var(--accent);outline-offset:3px;border-color:var(--bg2)}
+.seg{display:flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.seg button{font:inherit;font-size:15px;color:var(--fg);background:none;border:0;padding:10px 18px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);font-weight:600}
+.note{font-size:14px;color:var(--muted);margin:14px 0 0}
+
+/* Redes */
+.social{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,320px);gap:clamp(28px,6vw,80px);align-items:center}
+.phone{background:#050607;border-radius:36px;padding:10px;border:1px solid var(--line);width:100%}
+.phone video{display:block;width:100%;aspect-ratio:9/16;border-radius:27px;background:#000;object-fit:cover}
+
+/* Pasos */
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px;list-style:none;padding:0;margin:0;counter-reset:s}
+.steps li{counter-increment:s;border-top:3px solid var(--accent);padding-top:16px}
+.steps li::before{content:"Paso " counter(s);font-family:var(--display);font-weight:700;letter-spacing:.18em;text-transform:uppercase;font-size:14px;color:var(--muted);display:block;margin-bottom:8px}
+.steps b{display:block;font-family:var(--display);font-weight:700;font-size:30px;text-transform:uppercase;line-height:1;margin-bottom:8px}
+.steps span{color:var(--muted)}
+
+/* Cierre */
+.close{border-top:1px solid var(--line);text-align:left}
+.close h2{font-size:clamp(44px,9vw,120px);max-width:11em}
+.num{margin:22px 0 0;color:var(--muted);font-size:16px}
+.num b{color:var(--fg);font-weight:600;user-select:all}
+.copy{margin-left:10px;font:inherit;font-size:14px;color:var(--accent);background:none;border:1px solid var(--line);border-radius:6px;padding:3px 12px;cursor:pointer}
+footer{padding-block:28px 40px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+
+@media (max-width:860px){
+  .nav .links a:not(.pill){display:none}
+  .hero{min-height:88vh}
+  .hero video{object-position:68% 50%}
+  .hero::after{background:linear-gradient(0deg,rgba(6,7,9,.94) 8%,rgba(6,7,9,.55) 48%,rgba(6,7,9,.15) 100%)}
+  .hero .in{padding-top:96px;padding-bottom:70px}
+  .spec{left:max(16px,env(safe-area-inset-left,0px));right:auto;text-align:left;bottom:20px}
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .col{border-right:0;margin-right:0;border-bottom:1px solid var(--line);padding:24px 0 6px}
+  .col:last-child{border-bottom:0}
+  .social{grid-template-columns:minmax(0,1fr)}
+  .phone{max-width:320px;margin:0 auto}
+  .steps{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn,.cfg .stage img{transition:none}}
+</style>
+
+<div class="hero">
+  <video id="hv" autoplay muted loop playsinline preload="auto" poster="hero_poster.jpg"><source src="hero.mp4" type="video/mp4"></video>
+  <nav class="nav">
+    <a class="mark" href="#top"><i></i>SMDEVC</a>
+    <div class="links"><a href="#configurador">Pruébalo</a><a href="#redes">Videos</a><a href="#proceso">Proceso</a><a class="pill wa" href="#" target="_blank" rel="noopener">WhatsApp</a></div>
+  </nav>
+  <div class="in" id="top">
+    <p class="kicker">Desarrollo web y 3D · Bogotá</p>
+    <h1>Tu moto en <em>3D</em>, en tu página</h1>
+    <p class="lead">Visores 3D, páginas y videos para talleres y tiendas de motos. Tu cliente la gira, la pinta y te escribe lo que quiere.</p>
+    <div class="btns"><a class="btn wa" href="#" target="_blank" rel="noopener">Cotiza por WhatsApp</a><a class="btn ghost" href="#configurador">Pruébalo ahora</a></div>
+  </div>
+  <div class="spec">Modelo de prueba · Gixxer 150<br><b>283</b> piezas separadas · <b>240 000</b> triángulos</div>
+</div>
+
+<div class="wrap">
+  <div class="tech"><span>React</span><span>Three.js</span><span>Node.js</span><span>MySQL</span><span>Blender</span><span>Java · Android</span></div>
+
+  <section>
+    <p class="eyebrow">Qué hago</p>
+    <h2>Que tu cliente vea la moto antes de pedirla</h2>
+    <div class="cols">
+      <div class="col"><h3>Visor 3D</h3><p>La moto gira en tu página. El cliente cambia color, llantas, manubrio y accesorios, y te manda su configuración por WhatsApp.</p></div>
+      <div class="col"><h3>Web y apps</h3><p>Catálogos, cotizadores y paneles hechos en React y Node, con base de datos MySQL. Rápidos en el celular y pensados para generar consultas.</p></div>
+      <div class="col"><h3>Modelos y videos</h3><p>Modelos 3D de motos y accesorios, y videos verticales para TikTok, Instagram y Facebook con tu marca y tus productos.</p></div>
+    </div>
+  </section>
+
+  <section id="configurador" style="padding-top:0">
+    <p class="eyebrow">Pruébalo</p>
+    <h2>Elige el color y los accesorios</h2>
+    <p class="sub">Así se ve el visor en tu página. Son fotos del modelo de prueba; el configurador en vivo está en desarrollo.</p>
+    <div class="cfg">
+      <div class="stage"><img id="cimg" src="c_rojo_0.jpg" alt="Moto de prueba en el garaje 3D"><span class="tag" id="clabel">Rojo brillante · estándar</span></div>
+      <div class="bar">
+        <div class="group"><span>Color</span>
+          <div class="sw" id="sw">
+            <button type="button" style="--c:#d63a20" data-k="rojo" data-n="Rojo brillante" aria-label="Rojo brillante" aria-pressed="true"></button>
+            <button type="button" style="--c:#2f5fd0" data-k="azul" data-n="Azul metálico" aria-label="Azul metálico" aria-pressed="false"></button>
+            <button type="button" style="--c:#f0a410" data-k="naranja" data-n="Ámbar mate" aria-label="Ámbar mate" aria-pressed="false"></button>
+            <button type="button" style="--c:#4cc7bd" data-k="perlado" data-n="Perlado turquesa" aria-label="Perlado turquesa" aria-pressed="false"></button>
+            <button type="button" style="--c:#2a2c31" data-k="grafito" data-n="Grafito metálico" aria-label="Grafito metálico" aria-pressed="false"></button>
+          </div>
+        </div>
+        <div class="group"><span>Equipo</span>
+          <div class="seg" id="seg">
+            <button type="button" data-a="0" aria-pressed="true">Estándar</button>
+            <button type="button" data-a="1" aria-pressed="false">Baúl, exploradoras y más</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="redes" style="padding-top:0">
+    <div class="social">
+      <div>
+        <p class="eyebrow">Para tus redes</p>
+        <h2>Videos que hacen que te escriban</h2>
+        <p class="sub" style="margin-bottom:28px">Videos cortos y verticales para mostrar tus motos, tus servicios o tus novedades. Listos para publicar y con cierre para que pregunten.</p>
+        <div class="btns"><a class="btn wa" href="#" target="_blank" rel="noopener">Quiero uno para mi taller</a></div>
+      </div>
+      <div class="phone"><video controls playsinline preload="none" poster="poster.jpg" src="promo.mp4"></video></div>
+    </div>
+  </section>
+
+  <section id="proceso" style="padding-top:0">
+    <p class="eyebrow">Proceso</p>
+    <h2>Sin riesgo: primero ves una prueba</h2>
+    <ol class="steps">
+      <li><b>Me cuentas qué vendes</b><span>Por WhatsApp, con fotos de tus motos o productos.</span></li>
+      <li><b>Te muestro un avance</b><span>Una vista previa en 3D o la maqueta de tu página, antes de pagar el proyecto completo.</span></li>
+      <li><b>Lo publicamos</b><span>Lo dejo funcionando en tu página y en tus redes.</span></li>
+    </ol>
+  </section>
+
+  <section class="close">
+    <p class="eyebrow">Hablemos</p>
+    <h2>¿Quieres ver tu moto así?</h2>
+    <div class="btns"><a class="btn wa" href="#" target="_blank" rel="noopener">Escríbeme por WhatsApp</a></div>
+    <p class="num">WhatsApp: <b id="wanum">+57 000 000 0000</b><button class="copy" id="cp" type="button">Copiar</button></p>
+  </section>
+
+  <footer>© smdevc · Santiago, Bogotá, Colombia · Los modelos mostrados son de prueba y no usan marcas ni logos reales.</footer>
+</div>
+
+<script>
+// Cambia este número por el WhatsApp real, con indicativo y sin signos (Colombia = 57)
+var WA_NUMBER = '570000000000';
+var WA_TEXT = 'Hola Santiago, vi tu portafolio y quiero cotizar un visor 3D para mi moto o mi taller.';
+(function(){
+  var url = 'https://wa.me/' + WA_NUMBER + '?text=' + encodeURIComponent(WA_TEXT);
+  [].forEach.call(document.querySelectorAll('a.wa'), function(a){ a.href = url; });
+  var n = WA_NUMBER;
+  document.getElementById('wanum').textContent = '+' + n.slice(0,2) + ' ' + n.slice(2,5) + ' ' + n.slice(5,8) + ' ' + n.slice(8);
+  var cp = document.getElementById('cp');
+  cp.addEventListener('click', function(){
+    var ok = function(){ cp.textContent = 'Copiado'; setTimeout(function(){ cp.textContent = 'Copiar'; }, 1500); };
+    try { navigator.clipboard.writeText('+' + n).then(ok, function(){}); } catch(e) {}
+  });
+  // Configurador
+  var color = 'rojo', acc = '0', names = {};
+  var img = document.getElementById('cimg'), lab = document.getElementById('clabel');
+  [].forEach.call(document.querySelectorAll('#sw button'), function(b){ names[b.dataset.k] = b.dataset.n; });
+  function show(){
+    img.style.opacity = .35;
+    var next = 'c_' + color + '_' + acc + '.jpg', t = new Image();
+    t.onload = function(){ img.src = next; img.style.opacity = 1; };
+    t.onerror = function(){ img.style.opacity = 1; };
+    t.src = next;
+    lab.textContent = names[color] + ' · ' + (acc === '1' ? 'con baúl y exploradoras' : 'estándar');
+  }
+  [].forEach.call(document.querySelectorAll('#sw button'), function(b){
+    b.addEventListener('click', function(){
+      color = b.dataset.k;
+      [].forEach.call(document.querySelectorAll('#sw button'), function(o){ o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+      show();
+    });
+  });
+  [].forEach.call(document.querySelectorAll('#seg button'), function(b){
+    b.addEventListener('click', function(){
+      acc = b.dataset.a;
+      [].forEach.call(document.querySelectorAll('#seg button'), function(o){ o.setAttribute('aria-pressed', o === b ? 'true' : 'false'); });
+      show();
+    });
+  });
+  if (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { var hv = document.getElementById('hv'); hv.removeAttribute('autoplay'); hv.pause(); }
+})();
+</script>
