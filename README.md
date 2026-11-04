@@ -10,6 +10,12 @@ La moto base es mi **Suzuki Gixxer 150**, modelada por piezas en Blender para po
 ![Blender](https://img.shields.io/badge/Blender-modelo%20por%20piezas-E87D0D?style=flat-square&logo=blender&logoColor=white)
 ![Estado](https://img.shields.io/badge/estado-en%20desarrollo-F59E0B?style=flat-square)
 
+## Capturas
+
+![Pintura por zonas](web/docs/captura-pintura.png)
+![Revisión tipo tecnomecánica](web/docs/captura-tecnomecanica.png)
+![El parche](web/docs/captura-parche.png)
+
 ## Qué hace
 
 - **Pintura:** color por zonas (tanque, guardabarros, rines, chasis) y acabados como mate, brillante o cromado.
