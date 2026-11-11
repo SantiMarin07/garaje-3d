@@ -1,10 +1,11 @@
 // Configuración interna del aplicativo. Cambia aquí los textos y claves.
 export const CONFIG = {
-  // Texto que aparece en la foto para redes (pon tu dominio real)
-  DOMAIN_TEXT: '[TU-DOMINIO]',
-  // Textos de precio mientras no haya talleres/tiendas conectados
-  PRICE_TEXT: '[PRECIO]',
-  TOTAL_TEXT: '[TOTAL]',
+  // Texto que aparece en la foto para redes (cámbialo por tu dominio cuando lo tengas)
+  DOMAIN_TEXT: '@smde.vc',
+  // Textos de precio mientras no haya talleres/tiendas conectados.
+  // Cuando haya precios reales, pon el número en TOTAL_TEXT y se mostrará con la moneda.
+  PRICE_TEXT: 'Por cotizar',
+  TOTAL_TEXT: 'Por cotizar',
   CURRENCY: 'COP',
   // Clave donde se guarda el build en el navegador
   STORAGE_KEY: 'garaje-build-v2',

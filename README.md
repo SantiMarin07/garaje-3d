@@ -49,12 +49,19 @@ npm run build    # genera dist/ para publicar
 
 La versión de `html-completo/` se abre con doble clic en Chrome. Si el navegador bloquea algo, sirve la carpeta con `python -m http.server 8000`.
 
+## Publicar en Vercel
+
+La app de `web/` ya trae su `vercel.json`. Para publicarla:
+
+1. En [vercel.com/new](https://vercel.com/new), importa el repo `garaje-3d`.
+2. En **Root Directory** elige `web`. Vercel detecta Vite solo.
+3. Dale **Deploy**. Cada push a `main` vuelve a publicar.
+
 ## Próximos pasos
 
 - Escanear la Gixxer real con LiDAR para el modelo final.
 - Catálogo de marcas y modelos que se venden en Colombia.
 - Backend Node + MySQL para guardar builds y la comunidad.
-- Publicar una demo en Vercel.
 
 ## Créditos
 
